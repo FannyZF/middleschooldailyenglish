@@ -22,7 +22,7 @@ class Settings:
 
         self.deepseek_api_key = os.getenv("DEEPSEEK_API_KEY", "")
         self.deepseek_base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
-        self.deepseek_model = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+        self.deepseek_model = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
 
         self.schedule_cron = os.getenv("SCHEDULE_CRON", "0 6 * * *")
         self.timezone = os.getenv("TIMEZONE", "Asia/Shanghai")
