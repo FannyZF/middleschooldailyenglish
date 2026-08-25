@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from .config import settings
-from .services.pipeline import generate_today
+from .services.pipeline import generate_slang_today, generate_today
 from .services.settings import get_setting
 
 logger = logging.getLogger("scheduler")
@@ -48,6 +48,14 @@ def _job() -> None:
         logger.exception("每日内容生成失败: %s", e)
 
 
+def _job_slang() -> None:
+    try:
+        generate_slang_today()
+        logger.info("每日俚语生成完成")
+    except Exception as e:
+        logger.exception("每日俚语生成失败: %s", e)
+
+
 def start_scheduler() -> None:
     global _scheduler
     if _scheduler is not None:
@@ -60,9 +68,9 @@ def start_scheduler() -> None:
 
     try:
         _scheduler = BackgroundScheduler(timezone=settings.timezone)
-        _scheduler.add_job(
-            _job, CronTrigger.from_crontab(cron, timezone=settings.timezone)
-        )
+        trigger = CronTrigger.from_crontab(cron, timezone=settings.timezone)
+        _scheduler.add_job(_job, trigger)
+        _scheduler.add_job(_job_slang, trigger)
         _scheduler.start()
         logger.info("定时任务已启动: %s (%s)", cron, settings.timezone)
     except Exception:

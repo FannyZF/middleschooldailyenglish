@@ -31,6 +31,13 @@ def generate_now(request: Request, day: str = Form(default="")):
     return RedirectResponse(f"/content/{target}", status_code=302)
 
 
+@router.post("/admin/generate-slang")
+def generate_slang_now(request: Request, day: str = Form(default="")):
+    target = day.strip() or date.today().isoformat()
+    pipeline.generate_slang_for_date(target)
+    return RedirectResponse(f"/slang/{target}", status_code=302)
+
+
 @router.post("/admin/settings")
 def save_settings(
     request: Request,

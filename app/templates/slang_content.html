@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ c.date }} · 地道俚语{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ c.date }} · 俚语</h1>
+  <div class="head-actions">
+    <a class="btn" href="/slang/{{ c.date }}/download">下载全部 (ZIP)</a>
+    <a class="btn ghost" href="/slang/">返回列表</a>
+    <form method="post" action="/slang/{{ c.date }}/delete" onsubmit="return confirm('确认删除 {{ c.date }} 的俚语内容？删除后不可恢复。')" style="display:inline">
+      <button type="submit" class="btn-danger">删除</button>
+    </form>
+  </div>
+</div>
+
+{% if c.status == "failed" %}
+  <div class="error-banner">生成失败：{{ c.error }}</div>
+{% endif %}
+
+{% if c.status == "generated" %}
+<div class="images-grid">
+  {% for i in [1, 2, 3] %}
+  <div class="img-block">
+    <img src="/slang/{{ c.date }}/image/{{ i }}" alt="图 {{ i }}">
+    <div class="img-actions">
+      <span>图 {{ i }}</span>
+      <a href="/slang/{{ c.date }}/image/{{ i }}" download>下载</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% elif c.status == "pending" %}
+  <div class="empty"><p>内容尚未生成。</p></div>
+{% endif %}
+{% endblock %}

@@ -7,12 +7,22 @@
 </div>
 
 <div class="panel">
-  <h2>立即生成</h2>
+  <h2>立即生成 · 初中英语</h2>
   <form method="post" action="/admin/generate" class="inline-form">
     <label>日期（留空为今天）</label>
     <input type="date" name="day" value="{{ today }}">
-    <button type="submit">生成内容</button>
+    <button type="submit">生成新闻内容</button>
   </form>
+</div>
+
+<div class="panel">
+  <h2>立即生成 · 地道俚语</h2>
+  <form method="post" action="/admin/generate-slang" class="inline-form">
+    <label>日期（留空为今天）</label>
+    <input type="date" name="day" value="{{ today }}">
+    <button type="submit">生成俚语内容</button>
+  </form>
+  <p class="muted">俚语来自 Reddit 热门帖子，由 AI 提炼讲解。</p>
 </div>
 
 <div class="panel">
@@ -22,7 +32,7 @@
     <input type="password" name="deepseek_api_key" value="{{ keys.deepseek_api_key }}">
     <label>每天生成时间</label>
     <input type="time" name="schedule_time" value="{{ keys.schedule_time }}">
-    <p class="muted">系统会在每天这个时间自动生成当天的学习内容。</p>
+    <p class="muted">系统会在每天这个时间自动生成当天的初中英语和俚语内容。</p>
     <button type="submit">保存设置</button>
   </form>
   <p class="muted">API Key 保存在服务器数据库中，仅用于生成内容。新闻来自 BBC / CNN 公开 RSS，无需额外配置。</p>

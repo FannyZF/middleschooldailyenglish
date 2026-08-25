@@ -3,9 +3,9 @@ from datetime import date, datetime
 
 from ..config import settings
 from ..db import SessionLocal
-from ..models import DailyContent
-from ..schemas import Content
-from . import imagegen, llm, news
+from ..models import DailyContent, SlangContent
+from ..schemas import Content, SlangContent as SlangContentData
+from . import imagegen, llm, news, reddit
 
 
 def _norm_url(u: str) -> str:
@@ -91,5 +91,64 @@ def list_contents():
     db = SessionLocal()
     try:
         return db.query(DailyContent).order_by(DailyContent.date.desc()).all()
+    finally:
+        db.close()
+
+
+def generate_slang_for_date(day: str) -> SlangContent:
+    db = SessionLocal()
+    try:
+        row = db.query(SlangContent).filter(SlangContent.date == day).first()
+        if row is None:
+            row = SlangContent(date=day, status="pending")
+            db.add(row)
+            db.commit()
+
+        row.status = "pending"
+        row.error = ""
+        db.commit()
+
+        try:
+            posts = reddit.fetch_posts()
+            data = llm.generate_slang(posts)
+            content = SlangContentData.model_validate(data)
+
+            row.status = "generated"
+            row.slang = content.slang
+            row.phonetic = content.phonetic
+            row.meaning_en = content.meaning_en
+            row.meaning_zh = content.meaning_zh
+            row.usage = content.usage
+            row.examples = json.dumps(
+                [e.model_dump() for e in content.examples], ensure_ascii=False
+            )
+            row.scenarios = json.dumps(
+                [s.model_dump() for s in content.scenarios], ensure_ascii=False
+            )
+            row.source = content.source
+            row.source_url = content.source_url
+
+            out_dir = settings.images_dir / "slang" / day
+            imagegen.render_slang_all(content, out_dir)
+            row.image_dir = str(out_dir)
+            row.error = ""
+        except Exception as e:
+            row.status = "failed"
+            row.error = str(e)
+
+        db.commit()
+        return row
+    finally:
+        db.close()
+
+
+def generate_slang_today() -> SlangContent:
+    return generate_slang_for_date(date.today().isoformat())
+
+
+def list_slang_contents():
+    db = SessionLocal()
+    try:
+        return db.query(SlangContent).order_by(SlangContent.date.desc()).all()
     finally:
         db.close()

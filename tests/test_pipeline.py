@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.services import imagegen, news, pipeline
+from app.services import imagegen, news, pipeline, reddit
 
 
 def test_wrap_text_ascii():
@@ -57,3 +57,32 @@ def test_generate_for_date(monkeypatch):
     row = pipeline.generate_for_date("2099-01-01")
     assert row.status == "generated"
     assert row.word == "test"
+
+
+def test_generate_slang_for_date(monkeypatch):
+    monkeypatch.setattr(reddit, "fetch_posts", lambda: [{"title": "p", "selftext": ""}])
+    monkeypatch.setattr(
+        "app.services.llm.generate_slang",
+        lambda posts: {
+            "slang": "hit the sack",
+            "phonetic": "/hɪt ðə sæk/",
+            "meaning_en": "go to bed",
+            "meaning_zh": "去睡觉",
+            "usage": "口语常用。",
+            "examples": [{"en": "Let's hit the sack.", "zh": "我们睡觉吧。"}],
+            "scenarios": [
+                {
+                    "title": "道晚安",
+                    "dialogue_en": "A: Time to hit the sack.\nB: Good night!",
+                    "dialogue_zh": "A：该睡了。\nB：晚安！",
+                }
+            ],
+            "source": "Reddit r/EnglishLearning",
+            "source_url": "https://www.reddit.com/x",
+        },
+    )
+    monkeypatch.setattr(imagegen, "render_slang_all", lambda content, out_dir: None)
+
+    row = pipeline.generate_slang_for_date("2099-01-02")
+    assert row.status == "generated"
+    assert row.slang == "hit the sack"

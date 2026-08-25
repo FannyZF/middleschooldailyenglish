@@ -53,3 +53,26 @@ class Content(BaseModel):
     definitions: List[Definition] = []
     choices: List[ChoiceQuestion] = []  # 2 道选词填空
     translation: TranslationQuestion = TranslationQuestion()
+
+
+class SlangExample(BaseModel):
+    en: str = ""
+    zh: str = ""
+
+
+class SlangScenario(BaseModel):
+    title: str = ""
+    dialogue_en: str = ""
+    dialogue_zh: str = ""
+
+
+class SlangContent(BaseModel):
+    slang: str = ""
+    phonetic: str = ""
+    meaning_en: str = ""
+    meaning_zh: str = ""
+    usage: str = ""
+    examples: List[SlangExample] = []
+    scenarios: List[SlangScenario] = []
+    source: str = ""
+    source_url: str = ""

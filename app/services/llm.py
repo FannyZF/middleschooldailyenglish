@@ -60,21 +60,13 @@ def _client() -> OpenAI:
     return OpenAI(api_key=key, base_url=settings.deepseek_base_url)
 
 
-def generate_content(articles: list[dict]) -> dict:
+def _call_llm(system_prompt: str, user_msg: str) -> dict:
     client = _client()
-    candidates = json.dumps(articles, ensure_ascii=False)
-
-    user = (
-        "以下是今日新闻候选列表（JSON 数组，字段含 title/description/url/source/category/category_label）：\n\n"
-        f"{candidates}\n\n"
-        "请按要求挑选 1 条并生成学习内容，严格返回 JSON。"
-    )
-
     resp = client.chat.completions.create(
         model=settings.deepseek_model,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user},
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_msg},
         ],
         response_format={"type": "json_object"},
         temperature=0.7,
@@ -88,3 +80,53 @@ def generate_content(articles: list[dict]) -> dict:
         if content.startswith("json"):
             content = content[4:]
     return json.loads(content)
+
+
+def generate_content(articles: list[dict]) -> dict:
+    candidates = json.dumps(articles, ensure_ascii=False)
+    user = (
+        "以下是今日新闻候选列表（JSON 数组，字段含 title/description/url/source/category/category_label）：\n\n"
+        f"{candidates}\n\n"
+        "请按要求挑选 1 条并生成学习内容，严格返回 JSON。"
+    )
+    return _call_llm(SYSTEM_PROMPT, user)
+
+
+SLANG_SYSTEM_PROMPT = """你是一名精通地道英语口语的英语老师，面向成年人分享每日地道俚语表达。
+你的任务：从给定的 Reddit 热门帖子中挑选 1 个最有学习价值的地道俚语表达，并生成学习内容。
+
+要求：
+1. 尽量从帖子内容（标题/正文）中提取真实出现的地道俚语；若帖子中没有合适的，选一个与该话题相关的常见口语俚语。
+2. 俚语要地道、常用、适合成年人日常交流，避免生僻或过时的表达。
+3. 给出英文释义和中文释义，中文要准确自然。
+4. 给出 2-3 条简短用法说明（口语用法、语境、语气，用换行或分号分隔）。
+5. 给出 2-3 个英文例句及中文翻译，例句贴近日常生活。
+6. 给出 2-3 个使用场景，每个场景配一段简短中英对话（2-4 句）。
+7. 内容面向成年人，例子可以更贴近工作、生活、社交等成人场景。
+
+你必须严格只返回一个 JSON 对象，不要输出任何解释性文字、markdown 代码块或多余内容。
+JSON 结构如下：
+{
+  "slang": "俚语表达",
+  "phonetic": "音标，如 /hɪt ðə sæk/",
+  "meaning_en": "英文释义",
+  "meaning_zh": "中文释义",
+  "usage": "用法说明",
+  "examples": [{"en": "英文例句", "zh": "中文翻译"}],
+  "scenarios": [
+    {"title": "场景标题", "dialogue_en": "A: ...\\nB: ...", "dialogue_zh": "A：...\\nB：..."}
+  ],
+  "source": "来源，如 Reddit r/AskReddit",
+  "source_url": "来源帖子链接"
+}
+"""
+
+
+def generate_slang(posts: list[dict]) -> dict:
+    candidates = json.dumps(posts, ensure_ascii=False)
+    user = (
+        "以下是今日 Reddit 热门帖子列表（JSON 数组，字段含 title/selftext/subreddit/url/score）：\n\n"
+        f"{candidates}\n\n"
+        "请从中挑选/提炼 1 个最值得学习的地道俚语并生成内容，严格返回 JSON。"
+    )
+    return _call_llm(SLANG_SYSTEM_PROMPT, user)

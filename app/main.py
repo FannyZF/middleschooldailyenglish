@@ -11,7 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from .auth import NotAuthenticated, not_authenticated_handler
 from .config import settings
 from .db import init_db
-from .routes import admin, auth, content
+from .routes import admin, auth, content, slang
 
 logging.basicConfig(level=logging.INFO)
 
@@ -50,4 +50,5 @@ app.add_exception_handler(NotAuthenticated, not_authenticated_handler)
 
 app.include_router(auth.router)
 app.include_router(content.router)
+app.include_router(slang.router)
 app.include_router(admin.router)

@@ -62,3 +62,41 @@ class Setting(Base):
 
     key = Column(String(100), primary_key=True)
     value = Column(Text, default="")
+
+
+class SlangContent(Base):
+    __tablename__ = "slang_content"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(String(10), unique=True, index=True, nullable=False)
+    status = Column(String(20), default="pending")  # pending / generated / failed
+
+    slang = Column(String(100), default="")
+    phonetic = Column(String(100), default="")
+    meaning_en = Column(Text, default="")
+    meaning_zh = Column(Text, default="")
+    usage = Column(Text, default="")
+
+    examples = Column(Text, default="[]")   # JSON list {en, zh}
+    scenarios = Column(Text, default="[]")  # JSON list {title, dialogue_en, dialogue_zh}
+
+    source = Column(String(200), default="")
+    source_url = Column(Text, default="")
+
+    image_dir = Column(String(255), default="")
+    error = Column(Text, default="")
+
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    def examples_list(self):
+        try:
+            return json.loads(self.examples or "[]")
+        except json.JSONDecodeError:
+            return []
+
+    def scenarios_list(self):
+        try:
+            return json.loads(self.scenarios or "[]")
+        except json.JSONDecodeError:
+            return []

@@ -52,3 +52,29 @@ def test_choice_option_prefix_stripped():
     )
     assert q.options == ["improve", "waste", "forget", "break"]
     assert q.answer == "B"
+
+
+def test_slang_content_validation():
+    from app.schemas import SlangContent
+
+    data = {
+        "slang": "hit the sack",
+        "phonetic": "/hɪt ðə sæk/",
+        "meaning_en": "to go to bed",
+        "meaning_zh": "去睡觉",
+        "usage": "口语常用。",
+        "examples": [{"en": "I'm tired, let's hit the sack.", "zh": "我累了，去睡吧。"}],
+        "scenarios": [
+            {
+                "title": "和朋友道晚安",
+                "dialogue_en": "A: I'm beat. Time to hit the sack.\nB: Good night!",
+                "dialogue_zh": "A：我累坏了，该睡了。\nB：晚安！",
+            }
+        ],
+        "source": "Reddit r/EnglishLearning",
+        "source_url": "https://www.reddit.com/...",
+    }
+    c = SlangContent.model_validate(data)
+    assert c.slang == "hit the sack"
+    assert len(c.examples) == 1
+    assert len(c.scenarios) == 1

@@ -47,10 +47,10 @@ def get_proxies() -> dict | None:
     return None
 
 
-def fetch(url: str, timeout: int = 20) -> requests.Response:
+def fetch(url: str, timeout: int = 20, user_agent: str = _USER_AGENT) -> requests.Response:
     """抓取 URL，自动使用系统代理（env 或 Windows PAC），并回退 http/https、代理/直连。"""
     proxies = get_proxies()
-    headers = {"User-Agent": _USER_AGENT}
+    headers = {"User-Agent": user_agent}
 
     variants = [url]
     if url.startswith("https://"):

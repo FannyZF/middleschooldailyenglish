@@ -401,3 +401,60 @@ def render_all(content, out_dir: Path) -> None:
     _render_word(content, out_dir)
     _render_questions(content, out_dir)
     _render_answers(content, out_dir)
+
+
+# ---- 俚语模块 ----
+
+def _render_slang_main(content, out_dir: Path) -> None:
+    blocks = [
+        {"kind": "heading", "text": "今日地道俚语"},
+        {"kind": "word", "text": content.slang},
+    ]
+    if content.phonetic:
+        blocks.append({"kind": "meta", "text": content.phonetic})
+    blocks.append({"kind": "divider"})
+    blocks.append({"kind": "label", "text": "释义 Meaning"})
+    blocks.append({"kind": "para", "text": content.meaning_en, "color": BODY})
+    blocks.append({"kind": "para", "text": content.meaning_zh, "color": INK, "bold": True})
+    blocks.append({"kind": "divider"})
+    if content.source:
+        blocks.append(
+            {"kind": "para", "text": f"来源：{content.source}", "size": 28, "color": MUTED, "gap": 0}
+        )
+    _render_blocks(blocks, out_dir / "01.png", "地道俚语 · Slang")
+
+
+def _render_slang_usage(content, out_dir: Path) -> None:
+    blocks = [
+        {"kind": "heading", "text": "用法与例句"},
+        {"kind": "label", "text": "用法说明 Usage"},
+        {"kind": "para", "text": content.usage},
+        {"kind": "divider"},
+    ]
+    for i, ex in enumerate(content.examples, start=1):
+        blocks.append({"kind": "label", "text": f"例句 {i}"})
+        blocks.append({"kind": "para", "text": ex.en, "color": INK})
+        blocks.append({"kind": "para", "text": ex.zh, "color": MUTED})
+        if i < len(content.examples):
+            blocks.append({"kind": "divider"})
+    _render_blocks(blocks, out_dir / "02.png", "用法与例句 · Usage")
+
+
+def _render_slang_scenarios(content, out_dir: Path) -> None:
+    blocks = [
+        {"kind": "heading", "text": "使用场景"},
+    ]
+    for i, sc in enumerate(content.scenarios, start=1):
+        blocks.append({"kind": "label", "text": f"场景 {i} · {sc.title}"})
+        blocks.append({"kind": "para", "text": sc.dialogue_en, "color": INK})
+        blocks.append({"kind": "para", "text": sc.dialogue_zh, "color": MUTED})
+        if i < len(content.scenarios):
+            blocks.append({"kind": "divider"})
+    _render_blocks(blocks, out_dir / "03.png", "使用场景 · Scenarios")
+
+
+def render_slang_all(content, out_dir: Path) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    _render_slang_main(content, out_dir)
+    _render_slang_usage(content, out_dir)
+    _render_slang_scenarios(content, out_dir)
