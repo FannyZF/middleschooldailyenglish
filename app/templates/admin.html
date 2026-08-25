@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}后台 · 每日英语{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>后台设置</h1>
+  <a class="btn ghost" href="/">返回列表</a>
+</div>
+
+<div class="panel">
+  <h2>立即生成</h2>
+  <form method="post" action="/admin/generate" class="inline-form">
+    <label>日期（留空为今天）</label>
+    <input type="date" name="day" value="{{ today }}">
+    <button type="submit">生成内容</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>API Key 与定时</h2>
+  <form method="post" action="/admin/settings">
+    <label>DeepSeek API Key</label>
+    <input type="password" name="deepseek_api_key" value="{{ keys.deepseek_api_key }}">
+    <label>每天生成时间</label>
+    <input type="time" name="schedule_time" value="{{ keys.schedule_time }}">
+    <p class="muted">系统会在每天这个时间自动生成当天的学习内容。</p>
+    <button type="submit">保存设置</button>
+  </form>
+  <p class="muted">API Key 保存在服务器数据库中，仅用于生成内容。新闻来自 BBC / CNN 公开 RSS，无需额外配置。</p>
+</div>
+{% endblock %}

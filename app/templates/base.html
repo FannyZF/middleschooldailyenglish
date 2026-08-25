@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}每日英语{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  {% if request.session.get("user") %}
+  <nav class="topbar">
+    <a class="brand" href="/">每日英语 · Daily English</a>
+    <div class="nav-links">
+      <a href="/admin">后台设置</a>
+      <a href="/logout">退出登录</a>
+    </div>
+  </nav>
+  {% endif %}
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

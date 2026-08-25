@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}内容列表 · 每日英语{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>每日内容</h1>
+  <a class="btn" href="/admin">去后台</a>
+</div>
+
+<div class="panel export-panel">
+  <h2>批量导出</h2>
+  <form method="get" action="/export" class="inline-form">
+    <label>开始日期</label>
+    <input type="date" name="start">
+    <label>结束日期</label>
+    <input type="date" name="end">
+    <button type="submit">导出 ZIP</button>
+  </form>
+  <p class="muted">不填日期则导出全部内容；按日期范围打包成 ZIP 下载。</p>
+</div>
+
+{% if not contents %}
+  <div class="empty">
+    <p>还没有内容，去后台「立即生成今日」吧。</p>
+    <a class="btn" href="/admin">立即生成</a>
+  </div>
+{% else %}
+  <div class="grid">
+    {% for c in contents %}
+      <div class="card">
+        <a class="card-main" href="/content/{{ c.date }}">
+          <div class="card-date">{{ c.date }}</div>
+          <div class="card-title">{{ c.title or "（无标题）" }}</div>
+          <div class="card-meta">
+            <span class="tag">{{ c.category or "未分类" }}</span>
+            <span class="status status-{{ c.status }}">{{ c.status }}</span>
+          </div>
+        </a>
+        <form method="post" action="/content/{{ c.date }}/delete" onsubmit="return confirm('确认删除 {{ c.date }} 的内容？删除后不可恢复。')">
+          <button type="submit" class="btn-danger">删除</button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}
