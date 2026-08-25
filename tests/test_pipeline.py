@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.services import imagegen, news, pipeline, reddit
+from app.services import imagegen, news, pipeline, reddit, urban
 
 
 def test_wrap_text_ascii():
@@ -86,3 +86,32 @@ def test_generate_slang_for_date(monkeypatch):
     row = pipeline.generate_slang_for_date("2099-01-02")
     assert row.status == "generated"
     assert row.slang == "hit the sack"
+
+
+def test_slang_source_fallback(monkeypatch):
+    def boom():
+        raise RuntimeError("Reddit blocked")
+
+    monkeypatch.setattr(reddit, "fetch_posts", lambda: boom())
+    monkeypatch.setattr(
+        urban,
+        "fetch_entries",
+        lambda: [{"title": "no cap", "selftext": "for real", "subreddit": "Urban Dictionary"}],
+    )
+
+    got = pipeline._fetch_slang_candidates()
+    assert got[0]["title"] == "no cap"
+
+
+def test_slang_source_both_fail(monkeypatch):
+    def boom():
+        raise RuntimeError("blocked")
+
+    monkeypatch.setattr(reddit, "fetch_posts", lambda: boom())
+    monkeypatch.setattr(urban, "fetch_entries", lambda: boom())
+
+    try:
+        pipeline._fetch_slang_candidates()
+        assert False, "should raise"
+    except RuntimeError as e:
+        assert "数据源" in str(e)

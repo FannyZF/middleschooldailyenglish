@@ -5,7 +5,7 @@ from ..config import settings
 from ..db import SessionLocal
 from ..models import DailyContent, SlangContent
 from ..schemas import Content, SlangContent as SlangContentData
-from . import imagegen, llm, news, reddit
+from . import imagegen, llm, news, reddit, urban
 
 
 def _norm_url(u: str) -> str:
@@ -95,6 +95,19 @@ def list_contents():
         db.close()
 
 
+def _fetch_slang_candidates() -> list[dict]:
+    """Reddit 优先，失败则自动降级到 Urban Dictionary。"""
+    try:
+        return reddit.fetch_posts()
+    except Exception as reddit_err:
+        try:
+            return urban.fetch_entries()
+        except Exception as urban_err:
+            raise RuntimeError(
+                f"俚语数据源获取失败。Reddit：{reddit_err}；Urban Dictionary：{urban_err}"
+            )
+
+
 def generate_slang_for_date(day: str) -> SlangContent:
     db = SessionLocal()
     try:
@@ -109,7 +122,7 @@ def generate_slang_for_date(day: str) -> SlangContent:
         db.commit()
 
         try:
-            posts = reddit.fetch_posts()
+            posts = _fetch_slang_candidates()
             data = llm.generate_slang(posts)
             content = SlangContentData.model_validate(data)
 
