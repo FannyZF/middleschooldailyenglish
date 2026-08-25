@@ -4,7 +4,7 @@ services:
     container_name: news-english-study
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "5065:5065"
     env_file:
       - .env
     volumes:
