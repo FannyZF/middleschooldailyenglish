@@ -25,6 +25,8 @@ MUTED = "#64748B"
 LINE = "#E5E7EB"
 WHITE = "#FFFFFF"
 
+DEFAULT_FOOTER = "每日英语 · Daily English"
+SLANG_FOOTER = "Slang Lab | 每天一个地道Slang"
 REGULAR = "NotoSansCJKsc-Regular"
 BOLD = "NotoSansCJKsc-Bold"
 # 含完整 IPA 音标符号的拉丁字体（Noto Sans CJK 缺少部分音标字符）
@@ -106,11 +108,10 @@ def _draw_header(draw: ImageDraw.ImageDraw, title: str) -> None:
     draw.text((MARGIN, 40), title, font=brand, fill=WHITE)
 
 
-def _draw_footer(draw: ImageDraw.ImageDraw) -> None:
+def _draw_footer(draw: ImageDraw.ImageDraw, footer: str = DEFAULT_FOOTER) -> None:
     font = _font(REGULAR, 26)
-    text = "每日英语 · Daily English"
-    tw = draw.textlength(text, font=font)
-    draw.text(((W - tw) / 2, H - 62), text, font=font, fill=MUTED)
+    tw = draw.textlength(footer, font=font)
+    draw.text(((W - tw) / 2, H - 62), footer, font=font, fill=MUTED)
 
 
 # ---- block height / draw ----
@@ -294,7 +295,7 @@ def _draw_card(draw: ImageDraw.ImageDraw, d: dict, scale: float, y: int) -> None
 
 # ---- page engine ----
 
-def _render_blocks(blocks: list[dict], path: Path, header_title: str) -> None:
+def _render_blocks(blocks: list[dict], path: Path, header_title: str, footer: str = DEFAULT_FOOTER) -> None:
     img = Image.new("RGB", (W, H), BG)
     draw = ImageDraw.Draw(img)
 
@@ -305,7 +306,7 @@ def _render_blocks(blocks: list[dict], path: Path, header_title: str) -> None:
     y = HEADER_H + TOP_PAD
     for b in blocks:
         y = _draw_block(draw, b, scale, y)
-    _draw_footer(draw)
+    _draw_footer(draw, footer)
     img.save(path)
 
 
@@ -421,7 +422,7 @@ def _render_slang_main(content, out_dir: Path) -> None:
         blocks.append(
             {"kind": "para", "text": f"来源：{content.source}", "size": 28, "color": MUTED, "gap": 0}
         )
-    _render_blocks(blocks, out_dir / "01.png", "地道俚语 · Slang")
+    _render_blocks(blocks, out_dir / "01.png", "地道俚语 · Slang", footer=SLANG_FOOTER)
 
 
 def _render_slang_usage(content, out_dir: Path) -> None:
@@ -437,7 +438,7 @@ def _render_slang_usage(content, out_dir: Path) -> None:
         blocks.append({"kind": "para", "text": ex.zh, "color": MUTED})
         if i < len(content.examples):
             blocks.append({"kind": "divider"})
-    _render_blocks(blocks, out_dir / "02.png", "用法与例句 · Usage")
+    _render_blocks(blocks, out_dir / "02.png", "用法与例句 · Usage", footer=SLANG_FOOTER)
 
 
 def _render_slang_scenarios(content, out_dir: Path) -> None:
@@ -450,7 +451,7 @@ def _render_slang_scenarios(content, out_dir: Path) -> None:
         blocks.append({"kind": "para", "text": sc.dialogue_zh, "color": MUTED})
         if i < len(content.scenarios):
             blocks.append({"kind": "divider"})
-    _render_blocks(blocks, out_dir / "03.png", "使用场景 · Scenarios")
+    _render_blocks(blocks, out_dir / "03.png", "使用场景 · Scenarios", footer=SLANG_FOOTER)
 
 
 def render_slang_all(content, out_dir: Path) -> None:
