@@ -116,6 +116,18 @@ def _draw_footer(draw: ImageDraw.ImageDraw, footer: str = DEFAULT_FOOTER) -> Non
 
 # ---- block height / draw ----
 
+def _word_font_size(draw, text, scale):
+    """大号单词/俚语自适应：超宽则缩小，保证单行放得下。"""
+    size = _s(96, scale)
+    floor = max(_s(32, scale), 16)
+    while size > floor:
+        f = _font(BOLD, size)
+        if draw.textlength(text, font=f) <= CONTENT_WIDTH:
+            return size
+        size -= 2
+    return floor
+
+
 def _block_height(b: dict, draw: ImageDraw.ImageDraw, scale: float) -> int:
     kind = b["kind"]
     if kind == "heading":
@@ -131,7 +143,7 @@ def _block_height(b: dict, draw: ImageDraw.ImageDraw, scale: float) -> int:
         lines = wrap_text(draw, b["text"], f, CONTENT_WIDTH)
         return len(lines) * _line_height(f) + b.get("gap", 18)
     if kind == "word":
-        return _line_height(_font(BOLD, _s(96, scale))) + 8
+        return _line_height(_font(BOLD, _word_font_size(draw, b["text"], scale))) + 8
     if kind == "meta":
         f = _font(NOTO_LATIN, _s(34, scale))
         return len(wrap_text(draw, b["text"], f, CONTENT_WIDTH)) * _line_height(f) + 20
@@ -186,7 +198,7 @@ def _draw_block(draw: ImageDraw.ImageDraw, b: dict, scale: float, y: int) -> int
             cy += _line_height(font)
 
     elif kind == "word":
-        font = _font(BOLD, _s(96, scale))
+        font = _font(BOLD, _word_font_size(draw, b["text"], scale))
         draw.text((MARGIN, y), b["text"], font=font, fill=ACCENT)
 
     elif kind == "meta":
