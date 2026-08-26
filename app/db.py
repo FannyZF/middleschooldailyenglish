@@ -40,6 +40,12 @@ def _migrate() -> None:
         if "translation" not in cols and "sentence" in cols:
             conn.execute(text("ALTER TABLE daily_content RENAME COLUMN sentence TO translation"))
 
+        s_cols = {r[1] for r in conn.execute(text("PRAGMA table_info(slang_content)"))}
+        if s_cols and "caption" not in s_cols:
+            conn.execute(
+                text("ALTER TABLE slang_content ADD COLUMN caption TEXT DEFAULT ''")
+            )
+
 
 def init_db() -> None:
     from . import models  # noqa: F401

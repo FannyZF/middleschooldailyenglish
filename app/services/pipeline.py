@@ -140,6 +140,7 @@ def generate_slang_for_date(day: str) -> SlangContent:
             )
             row.source = content.source
             row.source_url = content.source_url
+            row.caption = content.caption
 
             out_dir = settings.images_dir / "slang" / day
             imagegen.render_slang_all(content, out_dir)

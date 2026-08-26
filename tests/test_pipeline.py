@@ -79,6 +79,7 @@ def test_generate_slang_for_date(monkeypatch):
             ],
             "source": "Reddit r/EnglishLearning",
             "source_url": "https://www.reddit.com/x",
+            "caption": "你是否有过很累的经历？不要再说 go to bed 了，用 hit the sack 吧！",
         },
     )
     monkeypatch.setattr(imagegen, "render_slang_all", lambda content, out_dir: None)
@@ -86,6 +87,7 @@ def test_generate_slang_for_date(monkeypatch):
     row = pipeline.generate_slang_for_date("2099-01-02")
     assert row.status == "generated"
     assert row.slang == "hit the sack"
+    assert row.caption
 
 
 def test_slang_source_fallback(monkeypatch):

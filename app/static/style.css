@@ -84,6 +84,20 @@ a.btn, button, .btn {
 .head-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .export-panel form { max-width: none; }
 
+.copy-box { margin-bottom: 16px; }
+.copy-label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.copy-row { display: flex; gap: 8px; align-items: stretch; }
+.copy-row input, .copy-row textarea {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fafafa;
+  font-family: inherit;
+  resize: vertical;
+}
+
 .empty { background: var(--card); border: 1px dashed var(--line); border-radius: 12px; padding: 40px; text-align: center; }
 
 .images-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }

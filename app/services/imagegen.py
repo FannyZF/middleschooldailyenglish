@@ -300,7 +300,7 @@ def _render_blocks(blocks: list[dict], path: Path, header_title: str, footer: st
     draw = ImageDraw.Draw(img)
 
     total = sum(_block_height(b, draw, 1.0) for b in blocks)
-    scale = 1.0 if total <= AVAILABLE else max(AVAILABLE / total, 0.55)
+    scale = 1.0 if total <= AVAILABLE else max(AVAILABLE / total, 0.3)
 
     _draw_header(draw, header_title)
     y = HEADER_H + TOP_PAD
@@ -447,8 +447,8 @@ def _render_slang_scenarios(content, out_dir: Path) -> None:
     ]
     for i, sc in enumerate(content.scenarios, start=1):
         blocks.append({"kind": "label", "text": f"场景 {i} · {sc.title}"})
-        blocks.append({"kind": "para", "text": sc.dialogue_en, "color": INK})
-        blocks.append({"kind": "para", "text": sc.dialogue_zh, "color": MUTED})
+        blocks.append({"kind": "para", "text": sc.dialogue_en, "color": INK, "size": 36})
+        blocks.append({"kind": "para", "text": sc.dialogue_zh, "color": MUTED, "size": 32})
         if i < len(content.scenarios):
             blocks.append({"kind": "divider"})
     _render_blocks(blocks, out_dir / "03.png", "使用场景 · Scenarios", footer=SLANG_FOOTER)

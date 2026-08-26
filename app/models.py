@@ -82,6 +82,7 @@ class SlangContent(Base):
 
     source = Column(String(200), default="")
     source_url = Column(Text, default="")
+    caption = Column(Text, default="")
 
     image_dir = Column(String(255), default="")
     error = Column(Text, default="")

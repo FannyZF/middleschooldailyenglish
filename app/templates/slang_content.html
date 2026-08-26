@@ -17,6 +17,26 @@
 {% endif %}
 
 {% if c.status == "generated" %}
+<div class="panel">
+  <h2>发布标题与文案（复制用）</h2>
+  <div class="copy-box">
+    <div class="copy-label">标题</div>
+    <div class="copy-row">
+      <input type="text" id="post-title" value="一天一个英文Slang | {{ c.slang }}" readonly>
+      <button type="button" onclick="copyText('post-title')">复制</button>
+    </div>
+  </div>
+  {% if c.caption %}
+  <div class="copy-box">
+    <div class="copy-label">文案</div>
+    <div class="copy-row">
+      <textarea id="post-caption" rows="3" readonly>{{ c.caption }}</textarea>
+      <button type="button" onclick="copyText('post-caption')">复制</button>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
 <div class="images-grid">
   {% for i in [1, 2, 3] %}
   <div class="img-block">
@@ -31,4 +51,15 @@
 {% elif c.status == "pending" %}
   <div class="empty"><p>内容尚未生成。</p></div>
 {% endif %}
+
+<script>
+function copyText(id) {
+  var el = document.getElementById(id);
+  el.select();
+  el.setSelectionRange(0, 99999);
+  try { document.execCommand('copy'); } catch(e) {}
+  navigator.clipboard && navigator.clipboard.writeText(el.value).catch(function(){});
+  alert('已复制');
+}
+</script>
 {% endblock %}

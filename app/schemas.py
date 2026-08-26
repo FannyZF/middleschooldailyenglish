@@ -76,3 +76,4 @@ class SlangContent(BaseModel):
     scenarios: List[SlangScenario] = []
     source: str = ""
     source_url: str = ""
+    caption: str = ""  # 社交平台发布文案
