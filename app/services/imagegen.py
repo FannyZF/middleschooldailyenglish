@@ -524,8 +524,11 @@ def render_toc_page(entries: list[tuple[str, int]]) -> Image.Image:
     num_font = _font(BOLD, 34)
     lh = _line_height(line_font)
     row_gap = 16
+    safe_bottom = H - FOOTER_H - 20
 
     for label, page in entries:
+        if y + lh > safe_bottom:
+            break
         draw.text((MARGIN, y), label, font=line_font, fill=INK)
         nstr = str(page)
         nw = draw.textlength(nstr, font=num_font)
