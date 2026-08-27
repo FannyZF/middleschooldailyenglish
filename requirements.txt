@@ -10,5 +10,7 @@ pillow>=10.3
 apscheduler>=3.10
 python-dotenv>=1.0
 feedparser>=6.0
+edge-tts>=7.2
+imageio-ffmpeg>=0.6
 pydantic>=2.6
 pytest>=8.0

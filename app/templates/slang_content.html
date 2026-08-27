@@ -17,6 +17,16 @@
 {% endif %}
 
 {% if c.status == "generated" %}
+{% if has_video %}
+<div class="panel video-panel">
+  <h2>视频（发小红书）</h2>
+  <video controls preload="metadata" src="/slang/{{ c.date }}/video"></video>
+  <div class="video-actions">
+    <a class="btn" href="/slang/{{ c.date }}/video" download>下载视频</a>
+  </div>
+</div>
+{% endif %}
+
 <div class="panel">
   <h2>发布标题与文案（复制用）</h2>
   <div class="copy-box">
@@ -36,6 +46,18 @@
   </div>
   {% endif %}
 </div>
+
+{% if audio_items %}
+<div class="panel">
+  <h2>语音试听</h2>
+  {% for item in audio_items %}
+  <div class="audio-item">
+    <div class="audio-label">{{ item.label }}<span class="audio-text">{{ item.text }}</span></div>
+    <audio controls preload="none" src="/slang/{{ c.date }}/audio/{{ item.name }}"></audio>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 
 <div class="images-grid">
   {% for i in [1, 2, 3] %}

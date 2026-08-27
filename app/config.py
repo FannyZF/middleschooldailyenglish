@@ -27,6 +27,8 @@ class Settings:
         self.schedule_cron = os.getenv("SCHEDULE_CRON", "0 6 * * *")
         self.timezone = os.getenv("TIMEZONE", "Asia/Shanghai")
 
+        self.tts_voice = os.getenv("TTS_VOICE", "en-US-JennyNeural")
+
         self.session_cookie_name = "nes_session"
         self.session_max_age = 60 * 60 * 24 * 7
 

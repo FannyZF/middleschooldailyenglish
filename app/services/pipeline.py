@@ -1,11 +1,14 @@
 import json
+import logging
 from datetime import date, datetime
 
 from ..config import settings
 from ..db import SessionLocal
 from ..models import DailyContent, SlangContent
 from ..schemas import Content, SlangContent as SlangContentData
-from . import imagegen, llm, news, reddit, urban
+from . import imagegen, llm, news, reddit, tts, urban, video
+
+logger = logging.getLogger("pipeline")
 
 
 def _norm_url(u: str) -> str:
@@ -146,6 +149,16 @@ def generate_slang_for_date(day: str) -> SlangContent:
             imagegen.render_slang_all(content, out_dir)
             row.image_dir = str(out_dir)
             row.error = ""
+
+            # 语音与视频（失败不影响内容生成，只缺对应文件）
+            try:
+                tts.generate_slang_audio(content, out_dir)
+            except Exception as e:
+                logger.warning("俚语语音生成失败: %s", e)
+            try:
+                video.build_slang_video(content, out_dir)
+            except Exception as e:
+                logger.warning("俚语视频生成失败: %s", e)
         except Exception as e:
             row.status = "failed"
             row.error = str(e)

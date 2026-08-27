@@ -80,6 +80,24 @@ def export(start: str = "", end: str = "", format: str = "zip"):
     )
 
 
+def _audio_items(row) -> list[dict]:
+    items: list[dict] = []
+    base = Path(row.image_dir) if row.image_dir else None
+    if base is None:
+        return items
+    if (base / "slang.mp3").exists():
+        items.append({"name": "slang.mp3", "label": "俚语发音", "text": row.slang or ""})
+    for i, ex in enumerate(row.examples_list(), start=1):
+        p = base / f"example-{i}.mp3"
+        if p.exists():
+            items.append({"name": p.name, "label": f"例句 {i}", "text": ex.get("en", "")})
+    for i, sc in enumerate(row.scenarios_list(), start=1):
+        p = base / f"scenario-{i}.mp3"
+        if p.exists():
+            items.append({"name": p.name, "label": f"场景 {i}", "text": sc.get("dialogue_en", "")})
+    return items
+
+
 @router.get("/slang/{day}")
 def detail(request: Request, day: str):
     db = SessionLocal()
@@ -89,8 +107,12 @@ def detail(request: Request, day: str):
         db.close()
     if row is None:
         raise HTTPException(status_code=404, detail="未找到该日期的俚语内容")
+    audio_items = _audio_items(row)
+    has_video = bool(row.image_dir) and (Path(row.image_dir) / "video.mp4").exists()
     return request.app.state.templates.TemplateResponse(
-        request, "slang_content.html", {"c": row}
+        request,
+        "slang_content.html",
+        {"c": row, "audio_items": audio_items, "has_video": has_video},
     )
 
 
@@ -109,6 +131,43 @@ def image(day: str, n: int):
     return FileResponse(path, media_type="image/png")
 
 
+@router.get("/slang/{day}/audio/{name}")
+def audio(day: str, name: str):
+    import re
+
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+\.mp3", name):
+        raise HTTPException(status_code=400, detail="非法文件名")
+    db = SessionLocal()
+    try:
+        row = db.query(SlangContent).filter(SlangContent.date == day).first()
+    finally:
+        db.close()
+    if row is None or not row.image_dir:
+        raise HTTPException(status_code=404, detail="语音不存在")
+    path = (Path(row.image_dir) / name).resolve()
+    base = Path(row.image_dir).resolve()
+    if not str(path).startswith(str(base)):
+        raise HTTPException(status_code=400, detail="非法路径")
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="语音不存在")
+    return FileResponse(path, media_type="audio/mpeg")
+
+
+@router.get("/slang/{day}/video")
+def video_file(day: str):
+    db = SessionLocal()
+    try:
+        row = db.query(SlangContent).filter(SlangContent.date == day).first()
+    finally:
+        db.close()
+    if row is None or not row.image_dir:
+        raise HTTPException(status_code=404, detail="视频不存在")
+    path = Path(row.image_dir) / "video.mp4"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="视频不存在")
+    return FileResponse(path, media_type="video/mp4")
+
+
 @router.get("/slang/{day}/download")
 def download(day: str):
     db = SessionLocal()
@@ -125,6 +184,8 @@ def download(day: str):
             p = img_dir / f"{i:02d}.png"
             if p.exists():
                 zf.write(p, f"{day}-{i:02d}.png")
+        for mp3 in sorted(img_dir.glob("*.mp3")):
+            zf.write(mp3, mp3.name)
     buf.seek(0)
     return StreamingResponse(
         buf,
