@@ -110,7 +110,7 @@ a.btn, button, .btn {
 .panel h2 { margin: 0 0 16px; font-size: 18px; color: var(--ink); }
 .panel form { display: flex; flex-direction: column; gap: 10px; max-width: 480px; }
 .panel label { font-size: 14px; color: var(--muted); }
-.panel input { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; }
+.panel input, .panel select { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; }
 .panel button { margin-top: 6px; align-self: flex-start; }
 .inline-form { flex-direction: row; align-items: flex-end; flex-wrap: wrap; }
 

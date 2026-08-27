@@ -471,3 +471,75 @@ def render_slang_all(content, out_dir: Path) -> None:
     _render_slang_main(content, out_dir)
     _render_slang_usage(content, out_dir)
     _render_slang_scenarios(content, out_dir)
+
+
+def render_cover(title: str) -> Image.Image:
+    """俚语合集 PDF 封面。"""
+    img = Image.new("RGB", (W, H), BG)
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([0, 0, W, HEADER_H], fill=ACCENT)
+    brand = _font(BOLD, 38)
+    draw.text((MARGIN, 40), "地道俚语 · Slang Lab", font=brand, fill=WHITE)
+
+    title_size = _s(88, 1.0)
+    while title_size > 40:
+        f = _font(BOLD, title_size)
+        if draw.textlength(title, font=f) <= CONTENT_WIDTH:
+            break
+        title_size -= 4
+    f = _font(BOLD, title_size)
+    tw = draw.textlength(title, font=f)
+    tx = (W - tw) / 2
+    ty = (H - _line_height(f)) // 2 - 60
+    draw.text((tx, ty), title, font=f, fill=INK)
+
+    draw.rectangle(
+        [(W - 160) / 2, ty + _line_height(f) + 12, (W + 160) / 2, ty + _line_height(f) + 20],
+        fill=GOLD,
+    )
+
+    sub = "Slang Lab | 每天一个地道Slang"
+    sf = _font(BOLD, 36)
+    stw = draw.textlength(sub, font=sf)
+    draw.text(((W - stw) / 2, ty + _line_height(f) + 40), sub, font=sf, fill=ACCENT)
+
+    _draw_footer(draw, SLANG_FOOTER)
+    return img
+
+
+def render_toc_page(entries: list[tuple[str, int]]) -> Image.Image:
+    """俚语合集 PDF 目录页。entries: [(标签, 页码), ...]"""
+    img = Image.new("RGB", (W, H), BG)
+    draw = ImageDraw.Draw(img)
+    _draw_header(draw, "地道俚语 · 目录")
+
+    y = HEADER_H + TOP_PAD
+    hf = _font(BOLD, 46)
+    draw.text((MARGIN, y), "目录 Contents", font=hf, fill=INK)
+    y += _line_height(hf) + 8
+    draw.rectangle([MARGIN, y, MARGIN + 120, y + 8], fill=GOLD)
+    y += 46
+
+    line_font = _font(REGULAR, 34)
+    num_font = _font(BOLD, 34)
+    lh = _line_height(line_font)
+    row_gap = 16
+
+    for label, page in entries:
+        draw.text((MARGIN, y), label, font=line_font, fill=INK)
+        nstr = str(page)
+        nw = draw.textlength(nstr, font=num_font)
+        num_x = CONTENT_RIGHT - nw
+        draw.text((num_x, y), nstr, font=num_font, fill=ACCENT)
+
+        label_end = MARGIN + draw.textlength(label, font=line_font)
+        mid_y = y + lh // 2
+        x = label_end + 14
+        while x < num_x - 14:
+            draw.ellipse([x, mid_y - 2, x + 4, mid_y + 2], fill=LINE)
+            x += 12
+
+        y += lh + row_gap
+
+    _draw_footer(draw, SLANG_FOOTER)
+    return img

@@ -13,9 +13,14 @@
     <input type="date" name="start">
     <label>结束日期</label>
     <input type="date" name="end">
-    <button type="submit">导出 ZIP</button>
+    <label>格式</label>
+    <select name="format">
+      <option value="pdf">PDF（封面+目录）</option>
+      <option value="zip">ZIP（图片）</option>
+    </select>
+    <button type="submit">导出</button>
   </form>
-  <p class="muted">不填日期则导出全部俚语内容；按日期范围打包成 ZIP 下载。</p>
+  <p class="muted">不填日期则导出全部俚语内容；PDF 会自动生成「XXXX年X月俚语集合」封面和目录。</p>
 </div>
 
 {% if not contents %}

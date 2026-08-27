@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from ..auth import get_current_user
 from ..db import SessionLocal
 from ..models import SlangContent
+from ..services import pdf_export
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -26,7 +27,7 @@ def index(request: Request):
 
 
 @router.get("/slang/export")
-def export(start: str = "", end: str = ""):
+def export(start: str = "", end: str = "", format: str = "zip"):
     db = SessionLocal()
     try:
         q = db.query(SlangContent).filter(SlangContent.status == "generated")
@@ -37,6 +38,26 @@ def export(start: str = "", end: str = ""):
         rows = q.order_by(SlangContent.date.asc()).all()
     finally:
         db.close()
+
+    if start and end:
+        name = f"slang-{start}-to-{end}"
+    elif start:
+        name = f"slang-from-{start}"
+    elif end:
+        name = f"slang-until-{end}"
+    else:
+        name = "slang-all"
+
+    if format.lower() == "pdf":
+        try:
+            pdf = pdf_export.build_slang_pdf(rows)
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        return StreamingResponse(
+            io.BytesIO(pdf),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{name}.pdf"'},
+        )
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -52,14 +73,6 @@ def export(start: str = "", end: str = ""):
                     zf.write(p, f"{row.date}/{i:02d}.png")
     buf.seek(0)
 
-    if start and end:
-        name = f"slang-{start}-to-{end}"
-    elif start:
-        name = f"slang-from-{start}"
-    elif end:
-        name = f"slang-until-{end}"
-    else:
-        name = "slang-all"
     return StreamingResponse(
         buf,
         media_type="application/zip",
