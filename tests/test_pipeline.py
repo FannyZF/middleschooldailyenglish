@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.services import imagegen, news, pipeline, reddit, tts, urban, video
+from app.services import imagegen, news, pipeline, reddit, urban
 
 
 def test_wrap_text_ascii():
@@ -83,43 +83,11 @@ def test_generate_slang_for_date(monkeypatch):
         },
     )
     monkeypatch.setattr(imagegen, "render_slang_all", lambda content, out_dir: None)
-    monkeypatch.setattr(tts, "generate_slang_audio", lambda content, out_dir: [])
-    monkeypatch.setattr(
-        video, "build_slang_video", lambda content, out_dir: Path(out_dir) / "video.mp4"
-    )
 
     row = pipeline.generate_slang_for_date("2099-01-02")
     assert row.status == "generated"
     assert row.slang == "hit the sack"
     assert row.caption
-
-
-def test_generate_slang_audio_video_fail_still_generated(monkeypatch):
-    monkeypatch.setattr(reddit, "fetch_posts", lambda: [{"title": "p", "selftext": ""}])
-    monkeypatch.setattr(
-        "app.services.llm.generate_slang",
-        lambda posts: {
-            "slang": "no cap",
-            "phonetic": "",
-            "meaning_en": "for real",
-            "meaning_zh": "真的",
-            "usage": "口语。",
-            "examples": [{"en": "No cap!", "zh": "真的！"}],
-            "scenarios": [
-                {"title": "t", "dialogue_en": "A: x", "dialogue_zh": "A：x"}
-            ],
-            "source": "UD",
-            "source_url": "x",
-            "caption": "c",
-        },
-    )
-    monkeypatch.setattr(imagegen, "render_slang_all", lambda content, out_dir: None)
-    monkeypatch.setattr(tts, "generate_slang_audio", lambda content, out_dir: (_ for _ in ()).throw(RuntimeError("tts down")))
-    monkeypatch.setattr(video, "build_slang_video", lambda content, out_dir: (_ for _ in ()).throw(RuntimeError("ffmpeg down")))
-
-    row = pipeline.generate_slang_for_date("2099-01-03")
-    assert row.status == "generated"
-    assert row.error == ""
 
 
 def test_slang_source_fallback(monkeypatch):

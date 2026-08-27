@@ -98,14 +98,6 @@ a.btn, button, .btn {
   resize: vertical;
 }
 
-.video-panel video { width: 100%; max-width: 420px; border-radius: 10px; display: block; background: #000; }
-.video-actions { margin-top: 12px; }
-
-.audio-item { margin-bottom: 12px; }
-.audio-label { font-size: 14px; color: var(--ink); margin-bottom: 4px; }
-.audio-text { color: var(--muted); font-size: 13px; margin-left: 8px; }
-.audio-item audio { width: 100%; max-width: 480px; height: 36px; }
-
 .empty { background: var(--card); border: 1px dashed var(--line); border-radius: 12px; padding: 40px; text-align: center; }
 
 .images-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
