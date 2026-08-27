@@ -5,11 +5,9 @@ import edge_tts
 
 from ..config import settings
 
-TTS_TIMEOUT = 30  # 单条语音合成超时（秒），防止连接挂起
-
 
 def synthesize(text: str, out_path: Path, voice: str | None = None) -> None:
-    """把文字合成 MP3 保存到 out_path。带超时，失败抛异常由上层捕获。"""
+    """把文字合成 MP3 保存到 out_path。"""
     voice = voice or settings.tts_voice
     text = (text or "").strip()
     if not text:
@@ -17,7 +15,7 @@ def synthesize(text: str, out_path: Path, voice: str | None = None) -> None:
 
     async def _run() -> None:
         communicate = edge_tts.Communicate(text, voice)
-        await asyncio.wait_for(communicate.save(str(out_path)), timeout=TTS_TIMEOUT)
+        await communicate.save(str(out_path))
 
     asyncio.run(_run())
 

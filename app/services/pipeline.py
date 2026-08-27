@@ -1,6 +1,5 @@
 import json
 import logging
-import threading
 from datetime import date, datetime
 
 from ..config import settings
@@ -10,9 +9,6 @@ from ..schemas import Content, SlangContent as SlangContentData
 from . import imagegen, llm, news, reddit, tts, urban, video
 
 logger = logging.getLogger("pipeline")
-
-# 全局生成锁：防止定时任务与手动点击同时生成导致 CPU/内存打满
-_generation_lock = threading.Lock()
 
 
 def _norm_url(u: str) -> str:
@@ -46,7 +42,6 @@ def generate_for_date(day: str) -> DailyContent:
         row.error = ""
         db.commit()
 
-        _generation_lock.acquire()
         try:
             articles = news.fetch_articles()
             data = llm.generate_content(articles)
@@ -84,8 +79,6 @@ def generate_for_date(day: str) -> DailyContent:
         except Exception as e:
             row.status = "failed"
             row.error = str(e)
-        finally:
-            _generation_lock.release()
 
         db.commit()
         return row
@@ -131,7 +124,6 @@ def generate_slang_for_date(day: str) -> SlangContent:
         row.error = ""
         db.commit()
 
-        _generation_lock.acquire()
         try:
             posts = _fetch_slang_candidates()
             data = llm.generate_slang(posts)
@@ -170,8 +162,6 @@ def generate_slang_for_date(day: str) -> SlangContent:
         except Exception as e:
             row.status = "failed"
             row.error = str(e)
-        finally:
-            _generation_lock.release()
 
         db.commit()
         return row

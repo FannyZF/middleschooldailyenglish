@@ -15,10 +15,11 @@ NARRATION_COUNT = 3
 def _run_ffmpeg(args: list[str]) -> None:
     exe = get_ffmpeg_exe()
     cmd = [exe, "-y"] + args
-    try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
-    except subprocess.TimeoutExpired:
-        raise RuntimeError("ffmpeg 执行超时")
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+    )
     if proc.returncode != 0:
         raise RuntimeError(
             f"ffmpeg 执行失败: {proc.stderr[-500:] if proc.stderr else 'unknown'}"
@@ -55,10 +56,9 @@ def build_slang_video(content, out_dir: Path) -> Path:
                 "-i", str(img),
                 "-i", str(audio),
                 "-c:v", "libx264",
-                "-preset", "veryfast",
                 "-tune", "stillimage",
                 "-pix_fmt", "yuv420p",
-                "-r", "12",
+                "-r", "24",
                 "-c:a", "aac",
                 "-b:a", "128k",
                 "-shortest",
