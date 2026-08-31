@@ -5,7 +5,7 @@ from ..config import settings
 from ..db import SessionLocal
 from ..models import DailyContent, SlangContent
 from ..schemas import Content, SlangContent as SlangContentData
-from . import imagegen, llm, news, reddit, urban
+from . import imagegen, lemmy, llm, news, reddit, urban
 
 
 def _norm_url(u: str) -> str:
@@ -123,16 +123,18 @@ def list_contents():
 
 
 def _fetch_slang_candidates() -> list[dict]:
-    """Reddit 优先，失败则自动降级到 Urban Dictionary。"""
-    try:
-        return reddit.fetch_posts()
-    except Exception as reddit_err:
+    """Reddit → Lemmy → Urban Dictionary 依次尝试。"""
+    errors: list[str] = []
+    for name, fn in (("Reddit", reddit.fetch_posts), ("Lemmy", lemmy.fetch_posts)):
         try:
-            return urban.fetch_entries()
-        except Exception as urban_err:
-            raise RuntimeError(
-                f"俚语数据源获取失败。Reddit：{reddit_err}；Urban Dictionary：{urban_err}"
-            )
+            return fn()
+        except Exception as e:
+            errors.append(f"{name}: {e}")
+    try:
+        return urban.fetch_entries()
+    except Exception as ue:
+        errors.append(f"Urban Dictionary: {ue}")
+        raise RuntimeError("俚语数据源获取失败：" + "；".join(errors))
 
 
 def generate_slang_for_date(day: str) -> SlangContent:

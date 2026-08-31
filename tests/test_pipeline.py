@@ -2,7 +2,7 @@ from pathlib import Path
 
 from app.db import SessionLocal
 from app.models import DailyContent
-from app.services import imagegen, news, pipeline, reddit, urban
+from app.services import imagegen, lemmy, news, pipeline, reddit, urban
 
 
 def test_wrap_text_ascii():
@@ -121,6 +121,7 @@ def test_slang_source_fallback(monkeypatch):
         raise RuntimeError("Reddit blocked")
 
     monkeypatch.setattr(reddit, "fetch_posts", lambda: boom())
+    monkeypatch.setattr(lemmy, "fetch_posts", lambda: boom())
     monkeypatch.setattr(
         urban,
         "fetch_entries",
@@ -136,6 +137,7 @@ def test_slang_source_both_fail(monkeypatch):
         raise RuntimeError("blocked")
 
     monkeypatch.setattr(reddit, "fetch_posts", lambda: boom())
+    monkeypatch.setattr(lemmy, "fetch_posts", lambda: boom())
     monkeypatch.setattr(urban, "fetch_entries", lambda: boom())
 
     try:
