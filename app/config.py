@@ -27,6 +27,11 @@ class Settings:
         self.schedule_cron = os.getenv("SCHEDULE_CRON", "0 6 * * *")
         self.timezone = os.getenv("TIMEZONE", "Asia/Shanghai")
 
+        self.reddit_client_id = os.getenv("REDDIT_CLIENT_ID", "")
+        self.reddit_client_secret = os.getenv("REDDIT_CLIENT_SECRET", "")
+        self.reddit_username = os.getenv("REDDIT_USERNAME", "")
+        self.reddit_password = os.getenv("REDDIT_PASSWORD", "")
+
         self.session_cookie_name = "nes_session"
         self.session_max_age = 60 * 60 * 24 * 7
 

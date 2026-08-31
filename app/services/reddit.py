@@ -1,24 +1,45 @@
-from .http import fetch
+import requests
+from requests.auth import HTTPBasicAuth
+
+from ..config import settings
+from .http import fetch, get_proxies
+from .settings import get_setting
 
 SUBREDDITS = ["EnglishLearning", "AskReddit", "AskAnAmerican", "AskUK"]
 REDDIT_UA = "dailyenglish-bot/1.0 (english learning tool)"
 
 
-def _fetch_subreddit(sub: str, limit: int = 10) -> tuple[list[dict], str | None]:
-    url = f"https://www.reddit.com/r/{sub}/hot.json?limit={limit}"
+def _creds() -> tuple[str, str, str, str] | None:
+    def g(key: str, cfg: str) -> str:
+        return (get_setting(key) or cfg or "").strip()
+
+    cid = g("reddit_client_id", settings.reddit_client_id)
+    secret = g("reddit_client_secret", settings.reddit_client_secret)
+    username = g("reddit_username", settings.reddit_username)
+    password = g("reddit_password", settings.reddit_password)
+    if cid and secret and username and password:
+        return cid, secret, username, password
+    return None
+
+
+def _get_token(creds: tuple[str, str, str, str]) -> str | None:
+    cid, secret, username, password = creds
     try:
-        resp = fetch(url, timeout=25, user_agent=REDDIT_UA)
-    except Exception as e:
-        return [], f"{sub}: {type(e).__name__} {str(e)[:120]}"
+        resp = requests.post(
+            "https://www.reddit.com/api/v1/access_token",
+            auth=HTTPBasicAuth(cid, secret),
+            data={"grant_type": "password", "username": username, "password": password},
+            headers={"User-Agent": REDDIT_UA},
+            timeout=20,
+            proxies=get_proxies(),
+        )
+        resp.raise_for_status()
+        return resp.json().get("access_token")
+    except Exception:
+        return None
 
-    if resp.status_code != 200:
-        return [], f"{sub}: HTTP {resp.status_code}"
 
-    try:
-        data = resp.json()
-    except ValueError:
-        return [], f"{sub}: 返回内容不是 JSON"
-
+def _parse_listing(data: dict, sub: str) -> list[dict]:
     out: list[dict] = []
     for child in data.get("data", {}).get("children", []):
         d = child.get("data", {})
@@ -35,7 +56,41 @@ def _fetch_subreddit(sub: str, limit: int = 10) -> tuple[list[dict], str | None]
                 "score": d.get("score") or 0,
             }
         )
-    return out, None
+    return out
+
+
+def _fetch_subreddit(sub: str, limit: int = 10) -> tuple[list[dict], str | None]:
+    creds = _creds()
+    if creds:
+        token = _get_token(creds)
+        if not token:
+            return [], f"{sub}: OAuth token 获取失败"
+        try:
+            resp = requests.get(
+                f"https://oauth.reddit.com/r/{sub}/hot",
+                params={"limit": limit},
+                headers={"Authorization": f"Bearer {token}", "User-Agent": REDDIT_UA},
+                timeout=20,
+                proxies=get_proxies(),
+            )
+            resp.raise_for_status()
+            return _parse_listing(resp.json(), sub), None
+        except Exception as e:
+            return [], f"{sub}(oauth): {type(e).__name__} {str(e)[:100]}"
+
+    # 未配置凭证时用公开接口兜底
+    try:
+        resp = fetch(
+            f"https://www.reddit.com/r/{sub}/hot.json?limit={limit}",
+            timeout=25,
+            user_agent=REDDIT_UA,
+        )
+    except Exception as e:
+        return [], f"{sub}: {type(e).__name__} {str(e)[:120]}"
+    try:
+        return _parse_listing(resp.json(), sub), None
+    except ValueError:
+        return [], f"{sub}: 返回内容不是 JSON"
 
 
 def fetch_posts(limit: int = 30) -> list[dict]:

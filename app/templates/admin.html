@@ -33,8 +33,16 @@
     <label>每天生成时间</label>
     <input type="time" name="schedule_time" value="{{ keys.schedule_time }}">
     <p class="muted">系统会在每天这个时间自动生成当天的初中英语和俚语内容。</p>
+    <label>Reddit Client ID</label>
+    <input type="text" name="reddit_client_id" value="{{ keys.reddit_client_id }}">
+    <label>Reddit Client Secret</label>
+    <input type="password" name="reddit_client_secret" value="{{ keys.reddit_client_secret }}">
+    <label>Reddit 用户名</label>
+    <input type="text" name="reddit_username" value="{{ keys.reddit_username }}">
+    <label>Reddit 密码</label>
+    <input type="password" name="reddit_password" value="{{ keys.reddit_password }}">
     <button type="submit">保存设置</button>
   </form>
-  <p class="muted">API Key 保存在服务器数据库中，仅用于生成内容。新闻来自 BBC / CNN 公开 RSS，无需额外配置。</p>
+  <p class="muted">填写 Reddit 凭证后，俚语模块改用官方 OAuth 接口（更稳定，不易被 403 屏蔽）。申请地址：reddit.com/prefs/apps。</p>
 </div>
 {% endblock %}
