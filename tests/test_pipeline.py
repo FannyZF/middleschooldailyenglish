@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from app.db import SessionLocal
+from app.models import DailyContent
 from app.services import imagegen, news, pipeline, reddit, urban
 
 
@@ -57,6 +59,30 @@ def test_generate_for_date(monkeypatch):
     row = pipeline.generate_for_date("2099-01-01")
     assert row.status == "generated"
     assert row.word == "test"
+
+
+def test_filter_used_articles():
+    db = SessionLocal()
+    db.add(
+        DailyContent(
+            date="2026-08-01",
+            status="generated",
+            source_url="https://x.com/old",
+            original_title="Old News Story",
+        )
+    )
+    db.commit()
+    db.close()
+
+    articles = [
+        {"url": "https://x.com/old", "title": "Old News Story"},
+        {"url": "https://x.com/new", "title": "Brand New Story"},
+    ]
+    db = SessionLocal()
+    fresh = pipeline._filter_used_articles(articles, db, exclude_day="2099-12-31")
+    db.close()
+    assert len(fresh) == 1
+    assert fresh[0]["url"] == "https://x.com/new"
 
 
 def test_generate_slang_for_date(monkeypatch):

@@ -26,6 +26,32 @@ def _match_article(articles: list[dict], source_url: str, title: str) -> dict | 
     return None
 
 
+def _filter_used_articles(articles: list[dict], db, exclude_day: str | None = None) -> list[dict]:
+    """排除历史已用过的新闻（按链接/标题），避免每天重复。若全用尽则回退全部。"""
+    used_urls: set[str] = set()
+    used_titles: set[str] = set()
+    rows = (
+        db.query(DailyContent)
+        .filter(DailyContent.status == "generated")
+        .filter(DailyContent.source_url != "")
+    )
+    for r in rows:
+        if exclude_day and r.date == exclude_day:
+            continue
+        if r.source_url:
+            used_urls.add(_norm_url(r.source_url))
+        if r.original_title:
+            used_titles.add(r.original_title.strip().lower())
+
+    fresh = [
+        a
+        for a in articles
+        if _norm_url(a.get("url", "")) not in used_urls
+        and (a.get("title") or "").strip().lower() not in used_titles
+    ]
+    return fresh if fresh else articles
+
+
 def generate_for_date(day: str) -> DailyContent:
     db = SessionLocal()
     try:
@@ -41,6 +67,7 @@ def generate_for_date(day: str) -> DailyContent:
 
         try:
             articles = news.fetch_articles()
+            articles = _filter_used_articles(articles, db, exclude_day=day)
             data = llm.generate_content(articles)
             content = Content.model_validate(data)
 
