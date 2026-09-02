@@ -107,7 +107,7 @@ SLANG_SYSTEM_PROMPT = """你是一名精通地道英语口语的英语老师，�
 9. 生成一条社交平台发布文案 caption，严格按以下模板填写（把【】换成具体内容，保留其余文字和引号）：
 你是否有过【具体经历/场景】的经历，这样的经历向你的外国朋友要怎么描述呢？不要再说【传统表达（被这个俚语替代的常规说法）】了，今天我们的slang "【俚语】"帮你的外国朋友秒懂！
 
-重要：输出的 slang 必须从本次提供的候选内容中挑选/提炼，绝不要使用本提示文字里出现过的任何例子词。
+重要：输出的 slang 必须从本次提供的候选内容中挑选/提炼，绝不要输出候选列表里不存在的表达，也不要使用本提示文字里出现过的任何例子词。
 
 你必须严格只返回一个 JSON 对象，不要输出任何解释性文字、markdown 代码块或多余内容。
 JSON 结构如下：
@@ -128,11 +128,16 @@ JSON 结构如下：
 """
 
 
-def generate_slang(posts: list[dict]) -> dict:
+def generate_slang(posts: list[dict], strict: bool = False) -> dict:
     candidates = json.dumps(posts, ensure_ascii=False)
+    strict_hint = (
+        "\n注意：上次输出的表达不在候选列表中，本次必须严格从候选里挑选一个真实出现的俚语/表达。"
+        if strict
+        else ""
+    )
     user = (
         "以下是今日候选内容列表（JSON 数组，字段含 title/selftext/source/url/score）：\n\n"
         f"{candidates}\n\n"
-        "请从中挑选/提炼 1 个最值得学习、适合公开分享的地道俚语并生成内容，严格返回 JSON。"
+        f"请从中挑选/提炼 1 个最值得学习、适合公开分享的地道俚语并生成内容，严格返回 JSON。{strict_hint}"
     )
     return _call_llm(SLANG_SYSTEM_PROMPT, user)

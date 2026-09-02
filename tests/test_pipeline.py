@@ -86,10 +86,14 @@ def test_filter_used_articles():
 
 
 def test_generate_slang_for_date(monkeypatch):
-    monkeypatch.setattr(reddit, "fetch_posts", lambda: [{"title": "p", "selftext": ""}])
+    monkeypatch.setattr(
+        pipeline,
+        "_fetch_slang_candidates",
+        lambda: [{"title": "p", "selftext": "hit the sack means go to bed"}],
+    )
     monkeypatch.setattr(
         "app.services.llm.generate_slang",
-        lambda posts: {
+        lambda posts, strict=False: {
             "slang": "hit the sack",
             "phonetic": "/hɪt ðə sæk/",
             "meaning_en": "go to bed",
@@ -114,6 +118,51 @@ def test_generate_slang_for_date(monkeypatch):
     assert row.status == "generated"
     assert row.slang == "hit the sack"
     assert row.caption
+
+
+def test_slang_not_in_candidates_triggers_retry(monkeypatch):
+    calls = {"n": 0}
+
+    def fake_llm(posts, strict=False):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return {
+                "slang": "kiss ass",
+                "phonetic": "",
+                "meaning_en": "suck up",
+                "meaning_zh": "拍马屁",
+                "usage": "u",
+                "examples": [{"en": "x", "zh": "y"}],
+                "scenarios": [{"title": "t", "dialogue_en": "A: b", "dialogue_zh": "A：b"}],
+                "source": "s",
+                "source_url": "",
+                "caption": "c",
+            }
+        return {
+            "slang": "lowkey",
+            "phonetic": "",
+            "meaning_en": "secretly",
+            "meaning_zh": "低调地",
+            "usage": "u",
+            "examples": [{"en": "x", "zh": "y"}],
+            "scenarios": [{"title": "t", "dialogue_en": "A: b", "dialogue_zh": "A：b"}],
+            "source": "s",
+            "source_url": "",
+            "caption": "c",
+        }
+
+    monkeypatch.setattr(
+        pipeline,
+        "_fetch_slang_candidates",
+        lambda: [{"title": "lowkey", "selftext": "means secretly"}],
+    )
+    monkeypatch.setattr("app.services.llm.generate_slang", fake_llm)
+    monkeypatch.setattr(imagegen, "render_slang_all", lambda content, out_dir: None)
+
+    row = pipeline.generate_slang_for_date("2099-01-04")
+    assert row.status == "generated"
+    assert row.slang == "lowkey"
+    assert calls["n"] == 2
 
 
 def test_slang_source_fallback(monkeypatch):

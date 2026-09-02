@@ -5,7 +5,6 @@ from .http import fetch
 
 UD_UA = "dailyenglish-bot/1.0 (english learning tool)"
 
-_RANDOM_URL = "https://api.urbandictionary.com/v0/random"
 _DEFINE_URL = "https://api.urbandictionary.com/v0/define?term="
 
 # 常用地道俚语种子词表：每天随机抽若干，保证候选既有质量又多样
@@ -44,7 +43,7 @@ def _best_def(item: dict) -> dict | None:
 
 
 def fetch_entries(limit: int = 8) -> list[dict]:
-    """以常用俚语种子为主，random 补充，保证返回的候选多样且适合学习。"""
+    """每天从常用俚语种子词表随机抽若干并取释义，保证候选干净、多样、适合学习。"""
     result: list[dict] = []
     seen: set[str] = set()
 
@@ -55,7 +54,6 @@ def fetch_entries(limit: int = 8) -> list[dict]:
         seen.add(cand["title"].lower())
         result.append(cand)
 
-    # 1) 常用俚语种子：每天随机抽 limit 个，取该词最热门释义
     seeds = random.sample(COMMON_SLANG, min(limit, len(COMMON_SLANG)))
     for w in seeds:
         try:
@@ -66,17 +64,6 @@ def fetch_entries(limit: int = 8) -> list[dict]:
             if items:
                 best = max(items, key=lambda it: it.get("thumbs_up") or 0)
                 _add(best)
-        except Exception:
-            continue
-
-    # 2) random 补充（若种子不足或想加入新词）
-    attempts = 0
-    while len(result) < limit and attempts < 4:
-        attempts += 1
-        try:
-            resp = fetch(_RANDOM_URL, timeout=15, user_agent=UD_UA)
-            for item in resp.json().get("list", []):
-                _add(item)
         except Exception:
             continue
 

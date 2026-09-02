@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from datetime import date, datetime
 
 from ..config import settings
@@ -9,6 +10,23 @@ from ..schemas import Content, SlangContent as SlangContentData
 from . import imagegen, lemmy, llm, news, reddit, urban
 
 logger = logging.getLogger("pipeline")
+
+# 候选脏话过滤（防止把粗俗词喂给模型，也避免模型总是选脏词）
+_VULGAR = re.compile(
+    r"\b(?:ass|arse|asshole|bitch|shit|fuck|fucking|dick|cock|pussy|cunt|whore|"
+    r"slut|nigga|nigger|fag(?:got)?|rape|porn|blowjob|boner|milf|hentai|wtf|omfg)\b"
+    r"|kiss\s+ass|suck\s+(?:my|your|his|her|it)",
+    re.IGNORECASE,
+)
+
+
+def _clean_candidates(items: list[dict]) -> list[dict]:
+    def _text(p: dict) -> str:
+        return " ".join(
+            str(p.get(k, "")) for k in ("title", "selftext", "description")
+        )
+
+    return [p for p in items if not _VULGAR.search(_text(p))]
 
 
 def _norm_url(u: str) -> str:
@@ -126,28 +144,44 @@ def list_contents():
 
 
 def _fetch_slang_candidates() -> list[dict]:
-    """Lemmy → Urban Dictionary → Reddit 依次尝试。"""
+    """Lemmy → Urban Dictionary → Reddit 依次尝试，候选统一过滤脏话。"""
     errors: list[str] = []
     for name, fn in (("Lemmy", lemmy.fetch_posts),):
         try:
-            result = fn()
+            result = _clean_candidates(fn())
             logger.info("俚语数据源: %s 成功（%d 条候选）", name, len(result))
-            return result
+            if result:
+                return result
         except Exception as e:
             errors.append(f"{name}: {e}")
     try:
-        result = urban.fetch_entries()
+        result = _clean_candidates(urban.fetch_entries())
         logger.info("俚语数据源: Urban Dictionary 成功（%d 条候选）", len(result))
-        return result
+        if result:
+            return result
     except Exception as ue:
         errors.append(f"Urban Dictionary: {ue}")
     try:
-        result = reddit.fetch_posts()
+        result = _clean_candidates(reddit.fetch_posts())
         logger.info("俚语数据源: Reddit 成功（%d 条候选）", len(result))
-        return result
+        if result:
+            return result
     except Exception as re:
         errors.append(f"Reddit: {re}")
     raise RuntimeError("俚语数据源获取失败：" + "；".join(errors))
+
+
+def _slang_in_candidates(slang: str, posts: list[dict]) -> bool:
+    s = (slang or "").strip().lower()
+    if not s:
+        return True
+    for p in posts:
+        text = " ".join(
+            str(p.get(k, "")) for k in ("title", "selftext", "description")
+        ).lower()
+        if s in text:
+            return True
+    return False
 
 
 def generate_slang_for_date(day: str) -> SlangContent:
@@ -167,6 +201,12 @@ def generate_slang_for_date(day: str) -> SlangContent:
             posts = _fetch_slang_candidates()
             data = llm.generate_slang(posts)
             content = SlangContentData.model_validate(data)
+
+            # 校验：俚语必须来自候选内容，否则重试一次（防止模型背默认词如 kiss ass）
+            if not _slang_in_candidates(content.slang, posts):
+                logger.warning("俚语 %r 不在候选中，重试一次", content.slang)
+                data = llm.generate_slang(posts, strict=True)
+                content = SlangContentData.model_validate(data)
 
             row.status = "generated"
             row.slang = content.slang
