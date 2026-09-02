@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import date, datetime
 
 from ..config import settings
@@ -6,6 +7,8 @@ from ..db import SessionLocal
 from ..models import DailyContent, SlangContent
 from ..schemas import Content, SlangContent as SlangContentData
 from . import imagegen, lemmy, llm, news, reddit, urban
+
+logger = logging.getLogger("pipeline")
 
 
 def _norm_url(u: str) -> str:
@@ -127,15 +130,21 @@ def _fetch_slang_candidates() -> list[dict]:
     errors: list[str] = []
     for name, fn in (("Lemmy", lemmy.fetch_posts),):
         try:
-            return fn()
+            result = fn()
+            logger.info("俚语数据源: %s 成功（%d 条候选）", name, len(result))
+            return result
         except Exception as e:
             errors.append(f"{name}: {e}")
     try:
-        return urban.fetch_entries()
+        result = urban.fetch_entries()
+        logger.info("俚语数据源: Urban Dictionary 成功（%d 条候选）", len(result))
+        return result
     except Exception as ue:
         errors.append(f"Urban Dictionary: {ue}")
     try:
-        return reddit.fetch_posts()
+        result = reddit.fetch_posts()
+        logger.info("俚语数据源: Reddit 成功（%d 条候选）", len(result))
+        return result
     except Exception as re:
         errors.append(f"Reddit: {re}")
     raise RuntimeError("俚语数据源获取失败：" + "；".join(errors))

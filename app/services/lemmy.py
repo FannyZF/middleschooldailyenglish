@@ -1,6 +1,6 @@
 from .http import fetch
 
-INSTANCES = ["lemmy.world", "sh.itjust.works", "lemmy.ml"]
+INSTANCES = ["lemmy.world", "sh.itjust.works", "lemmy.ml", "lemmy.ca", "discuss.tchncs.de"]
 LEMMY_UA = "dailyenglish-bot/1.0 (english learning tool)"
 
 
