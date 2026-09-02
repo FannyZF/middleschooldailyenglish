@@ -143,26 +143,32 @@ def list_contents():
         db.close()
 
 
+def _tag_origin(items: list[dict], origin: str) -> list[dict]:
+    for p in items:
+        p["_origin"] = origin
+    return items
+
+
 def _fetch_slang_candidates() -> list[dict]:
-    """Lemmy → Urban Dictionary → Reddit 依次尝试，候选统一过滤脏话。"""
+    """Lemmy → Urban Dictionary → Reddit 依次尝试，候选统一过滤脏话并标记来源。"""
     errors: list[str] = []
     for name, fn in (("Lemmy", lemmy.fetch_posts),):
         try:
-            result = _clean_candidates(fn())
+            result = _tag_origin(_clean_candidates(fn()), name)
             logger.info("俚语数据源: %s 成功（%d 条候选）", name, len(result))
             if result:
                 return result
         except Exception as e:
             errors.append(f"{name}: {e}")
     try:
-        result = _clean_candidates(urban.fetch_entries())
+        result = _tag_origin(_clean_candidates(urban.fetch_entries()), "Urban Dictionary")
         logger.info("俚语数据源: Urban Dictionary 成功（%d 条候选）", len(result))
         if result:
             return result
     except Exception as ue:
         errors.append(f"Urban Dictionary: {ue}")
     try:
-        result = _clean_candidates(reddit.fetch_posts())
+        result = _tag_origin(_clean_candidates(reddit.fetch_posts()), "Reddit")
         logger.info("俚语数据源: Reddit 成功（%d 条候选）", len(result))
         if result:
             return result
@@ -171,17 +177,30 @@ def _fetch_slang_candidates() -> list[dict]:
     raise RuntimeError("俚语数据源获取失败：" + "；".join(errors))
 
 
-def _slang_in_candidates(slang: str, posts: list[dict]) -> bool:
+def _find_slang_candidate(slang: str, posts: list[dict]) -> dict | None:
     s = (slang or "").strip().lower()
     if not s:
-        return True
+        return None
     for p in posts:
         text = " ".join(
             str(p.get(k, "")) for k in ("title", "selftext", "description")
         ).lower()
         if s in text:
-            return True
-    return False
+            return p
+    return None
+
+
+def _source_label(p: dict) -> str:
+    """由候选的真实来源生成标签，避免模型编造来源（如 Lemmy 被写成 reddit）。"""
+    origin = p.get("_origin", "")
+    if origin == "Urban Dictionary":
+        return "Urban Dictionary"
+    sub = (p.get("subreddit") or "").strip()
+    if origin and sub:
+        return f"{origin} r/{sub}"
+    if origin:
+        return origin
+    return ""
 
 
 def generate_slang_for_date(day: str) -> SlangContent:
@@ -203,10 +222,19 @@ def generate_slang_for_date(day: str) -> SlangContent:
             content = SlangContentData.model_validate(data)
 
             # 校验：俚语必须来自候选内容，否则重试一次（防止模型背默认词如 kiss ass）
-            if not _slang_in_candidates(content.slang, posts):
+            if _find_slang_candidate(content.slang, posts) is None:
                 logger.warning("俚语 %r 不在候选中，重试一次", content.slang)
                 data = llm.generate_slang(posts, strict=True)
                 content = SlangContentData.model_validate(data)
+
+            # 来源/链接由真实候选回填，避免模型编造（如 Lemmy 被写成 reddit）
+            match = _find_slang_candidate(content.slang, posts)
+            if match:
+                label = _source_label(match)
+                if label:
+                    content.source = label
+                if match.get("url"):
+                    content.source_url = match["url"]
 
             row.status = "generated"
             row.slang = content.slang

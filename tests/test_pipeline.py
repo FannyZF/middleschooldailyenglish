@@ -176,6 +176,41 @@ def test_slang_not_in_candidates_triggers_retry(monkeypatch):
     assert calls["n"] == 2
 
 
+def test_slang_source_corrected_from_candidates(monkeypatch):
+    cand = [
+        {
+            "title": "lowkey means chill",
+            "selftext": "",
+            "subreddit": "asklemmy",
+            "url": "https://lemmy.world/post/9",
+            "_origin": "Lemmy",
+        }
+    ]
+
+    def fake_llm(posts, strict=False):
+        return {
+            "slang": "lowkey",
+            "phonetic": "",
+            "meaning_en": "secretly",
+            "meaning_zh": "低调地",
+            "usage": "u",
+            "examples": [{"en": "x", "zh": "y"}],
+            "scenarios": [{"title": "t", "dialogue_en": "A: b", "dialogue_zh": "A：b"}],
+            "source": "Reddit r/main",  # 模型编造
+            "source_url": "https://reddit.com/fake",
+            "caption": "c",
+        }
+
+    monkeypatch.setattr(pipeline, "_fetch_slang_candidates", lambda: cand)
+    monkeypatch.setattr("app.services.llm.generate_slang", fake_llm)
+    monkeypatch.setattr(imagegen, "render_slang_all", lambda content, out_dir: None)
+
+    row = pipeline.generate_slang_for_date("2099-01-05")
+    assert row.status == "generated"
+    assert row.source == "Lemmy r/asklemmy"
+    assert row.source_url == "https://lemmy.world/post/9"
+
+
 def test_slang_source_fallback(monkeypatch):
     def boom():
         raise RuntimeError("Reddit blocked")
