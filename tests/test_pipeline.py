@@ -252,3 +252,20 @@ def test_slang_source_all_fail(monkeypatch):
         assert False, "should raise"
     except RuntimeError as e:
         assert "数据源" in str(e)
+
+
+def test_slang_source_urban_only(monkeypatch):
+    monkeypatch.setattr(pipeline.settings, "slang_source", "urban")
+    monkeypatch.setattr(
+        urban, "fetch_entries", lambda: [{"title": "lowkey", "selftext": "secret"}]
+    )
+
+    def not_called():
+        raise AssertionError("lemmy/reddit 不应被调用")
+
+    monkeypatch.setattr(lemmy, "fetch_posts", lambda: not_called())
+    monkeypatch.setattr(reddit, "fetch_posts", lambda: not_called())
+
+    got = pipeline._fetch_slang_candidates()
+    assert got[0]["title"] == "lowkey"
+    assert got[0]["_origin"] == "Urban Dictionary"

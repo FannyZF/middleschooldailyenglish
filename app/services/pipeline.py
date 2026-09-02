@@ -149,27 +149,49 @@ def _tag_origin(items: list[dict], origin: str) -> list[dict]:
     return items
 
 
+def _fetch_one(name: str, fn, clean=True) -> list[dict]:
+    result = _tag_origin(_clean_candidates(fn()) if clean else fn(), name)
+    logger.info("俚语数据源: %s 成功（%d 条候选）", name, len(result))
+    return result
+
+
 def _fetch_slang_candidates() -> list[dict]:
-    """Lemmy → Urban Dictionary → Reddit 依次尝试，候选统一过滤脏话并标记来源。"""
+    """按 SLANG_SOURCE 配置取俚语候选：urban / lemmy / reddit / auto。"""
+    source = (settings.slang_source or "auto").strip().lower()
     errors: list[str] = []
+
+    if source in ("urban", "lemmy", "reddit"):
+        mapping = {
+            "urban": ("Urban Dictionary", urban.fetch_entries),
+            "lemmy": ("Lemmy", lemmy.fetch_posts),
+            "reddit": ("Reddit", reddit.fetch_posts),
+        }
+        name, fn = mapping[source]
+        try:
+            result = _fetch_one(name, fn)
+            if result:
+                return result
+            errors.append(f"{name}: 无可用候选")
+        except Exception as e:
+            errors.append(f"{name}: {e}")
+        raise RuntimeError("俚语数据源获取失败：" + "；".join(errors))
+
+    # auto：Lemmy → Urban Dictionary → Reddit
     for name, fn in (("Lemmy", lemmy.fetch_posts),):
         try:
-            result = _tag_origin(_clean_candidates(fn()), name)
-            logger.info("俚语数据源: %s 成功（%d 条候选）", name, len(result))
+            result = _fetch_one(name, fn)
             if result:
                 return result
         except Exception as e:
             errors.append(f"{name}: {e}")
     try:
-        result = _tag_origin(_clean_candidates(urban.fetch_entries()), "Urban Dictionary")
-        logger.info("俚语数据源: Urban Dictionary 成功（%d 条候选）", len(result))
+        result = _fetch_one("Urban Dictionary", urban.fetch_entries)
         if result:
             return result
     except Exception as ue:
         errors.append(f"Urban Dictionary: {ue}")
     try:
-        result = _tag_origin(_clean_candidates(reddit.fetch_posts()), "Reddit")
-        logger.info("俚语数据源: Reddit 成功（%d 条候选）", len(result))
+        result = _fetch_one("Reddit", reddit.fetch_posts)
         if result:
             return result
     except Exception as re:

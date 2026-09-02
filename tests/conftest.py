@@ -8,6 +8,7 @@ os.environ["FONT_DIR"] = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "fonts"
 )
 os.environ["START_SCHEDULER"] = "0"
+os.environ["SLANG_SOURCE"] = "auto"
 
 
 @pytest.fixture(autouse=True)

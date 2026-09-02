@@ -32,6 +32,9 @@ class Settings:
         self.reddit_username = os.getenv("REDDIT_USERNAME", "")
         self.reddit_password = os.getenv("REDDIT_PASSWORD", "")
 
+        # 俚语数据源：urban / lemmy / reddit / auto（自动按优先级）
+        self.slang_source = os.getenv("SLANG_SOURCE", "urban")
+
         self.session_cookie_name = "nes_session"
         self.session_max_age = 60 * 60 * 24 * 7
 
