@@ -11,11 +11,11 @@ from . import imagegen, lemmy, llm, news, reddit, urban
 
 logger = logging.getLogger("pipeline")
 
-# 候选脏话过滤（防止把粗俗词喂给模型，也避免模型总是选脏词）
+# 候选脏话过滤（子串级，能命中 shitpost/bullshit 等复合词；ass/cock/dick 等用整词避免误伤 class/cocktail）
 _VULGAR = re.compile(
-    r"\b(?:ass|arse|asshole|bitch|shit|fuck|fucking|dick|cock|pussy|cunt|whore|"
-    r"slut|nigga|nigger|fag(?:got)?|rape|porn|blowjob|boner|milf|hentai|wtf|omfg)\b"
-    r"|kiss\s+ass|suck\s+(?:my|your|his|her|it)",
+    r"(?:shit|fuck|bitch|pussy|cunt|whore|slut|nigg|porn|wtf|omfg)"
+    r"|\b(?:ass|arse|dick|cock|rape|fag(?:got)?)\b"
+    r"|(?:asshole|kiss\s+ass|kiss\s*my\s*ass|blow\s+jobs?|handjob)",
     re.IGNORECASE,
 )
 

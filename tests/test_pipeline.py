@@ -61,6 +61,17 @@ def test_generate_for_date(monkeypatch):
     assert row.word == "test"
 
 
+def test_clean_candidates_filters_compound_vulgar():
+    items = [
+        {"title": "shitposting in r/main is a hobby", "selftext": ""},
+        {"title": "lowkey flex but ok", "selftext": ""},
+        {"title": "best apple pie recipe", "selftext": ""},
+    ]
+    out = pipeline._clean_candidates(items)
+    assert len(out) == 2
+    assert "apple pie" in out[0]["title"] or "apple pie" in out[1]["title"]
+
+
 def test_filter_used_articles():
     db = SessionLocal()
     db.add(
