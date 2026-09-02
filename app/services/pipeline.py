@@ -123,9 +123,9 @@ def list_contents():
 
 
 def _fetch_slang_candidates() -> list[dict]:
-    """Reddit → Lemmy → Urban Dictionary 依次尝试。"""
+    """Lemmy → Urban Dictionary → Reddit 依次尝试。"""
     errors: list[str] = []
-    for name, fn in (("Reddit", reddit.fetch_posts), ("Lemmy", lemmy.fetch_posts)):
+    for name, fn in (("Lemmy", lemmy.fetch_posts),):
         try:
             return fn()
         except Exception as e:
@@ -134,7 +134,11 @@ def _fetch_slang_candidates() -> list[dict]:
         return urban.fetch_entries()
     except Exception as ue:
         errors.append(f"Urban Dictionary: {ue}")
-        raise RuntimeError("俚语数据源获取失败：" + "；".join(errors))
+    try:
+        return reddit.fetch_posts()
+    except Exception as re:
+        errors.append(f"Reddit: {re}")
+    raise RuntimeError("俚语数据源获取失败：" + "；".join(errors))
 
 
 def generate_slang_for_date(day: str) -> SlangContent:

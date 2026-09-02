@@ -132,7 +132,19 @@ def test_slang_source_fallback(monkeypatch):
     assert got[0]["title"] == "no cap"
 
 
-def test_slang_source_both_fail(monkeypatch):
+def test_slang_source_lemmy_first(monkeypatch):
+    def boom():
+        raise RuntimeError("blocked")
+
+    monkeypatch.setattr(lemmy, "fetch_posts", lambda: [{"title": "lemmy top"}])
+    monkeypatch.setattr(urban, "fetch_entries", lambda: boom())
+    monkeypatch.setattr(reddit, "fetch_posts", lambda: boom())
+
+    got = pipeline._fetch_slang_candidates()
+    assert got[0]["title"] == "lemmy top"
+
+
+def test_slang_source_all_fail(monkeypatch):
     def boom():
         raise RuntimeError("blocked")
 
