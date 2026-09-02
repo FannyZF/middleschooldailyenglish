@@ -10,7 +10,7 @@ _DEFINE_URL = "https://api.urbandictionary.com/v0/define?term="
 
 # 常用地道俚语种子词表：每天随机抽若干，保证候选既有质量又多样
 COMMON_SLANG = [
-    "hit the sack", "hit the hay", "piece of cake", "break a leg",
+    "hit the hay", "piece of cake", "break a leg",
     "spill the beans", "under the weather", "once in a blue moon",
     "bite the bullet", "let the cat out of the bag", "burn the midnight oil",
     "call it a day", "get the ball rolling", "miss the boat",
