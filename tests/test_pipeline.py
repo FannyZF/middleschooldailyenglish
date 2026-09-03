@@ -121,6 +121,7 @@ def test_generate_slang_for_date(monkeypatch):
             "source": "Reddit r/EnglishLearning",
             "source_url": "https://www.reddit.com/x",
             "caption": "你是否有过很累的经历？不要再说 go to bed 了，用 hit the sack 吧！",
+            "hook": "累到睁不开眼却还想再刷一会儿手机？",
             "theme": "日常生活",
         },
     )
@@ -131,6 +132,7 @@ def test_generate_slang_for_date(monkeypatch):
     assert row.slang == "hit the sack"
     assert row.caption
     assert row.theme == "日常生活"
+    assert row.hook
 
 
 def test_slang_not_in_candidates_triggers_retry(monkeypatch):

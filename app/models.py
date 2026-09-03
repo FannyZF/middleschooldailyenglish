@@ -83,6 +83,7 @@ class SlangContent(Base):
     source = Column(String(200), default="")
     source_url = Column(Text, default="")
     caption = Column(Text, default="")
+    hook = Column(Text, default="")
     theme = Column(String(50), default="")
 
     image_dir = Column(String(255), default="")

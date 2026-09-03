@@ -273,6 +273,7 @@ def generate_slang_for_date(day: str) -> SlangContent:
             row.source = content.source
             row.source_url = content.source_url
             row.caption = content.caption
+            row.hook = content.hook
             row.theme = content.theme
 
             out_dir = settings.images_dir / "slang" / day
