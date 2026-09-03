@@ -11,18 +11,23 @@ from ..db import SessionLocal
 from ..models import SlangContent
 from ..services import pdf_export
 
+THEMES = ["职场", "学生", "日常生活", "社交", "网络热词", "情感"]
+
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("/slang/")
-def index(request: Request):
+def index(request: Request, theme: str = ""):
     db = SessionLocal()
     try:
-        rows = db.query(SlangContent).order_by(SlangContent.date.desc()).all()
+        q = db.query(SlangContent).order_by(SlangContent.date.desc())
+        if theme:
+            q = q.filter(SlangContent.theme == theme)
+        rows = q.all()
     finally:
         db.close()
     return request.app.state.templates.TemplateResponse(
-        request, "slang_index.html", {"contents": rows}
+        request, "slang_index.html", {"contents": rows, "themes": THEMES, "current_theme": theme}
     )
 
 

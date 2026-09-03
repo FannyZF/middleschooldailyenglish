@@ -27,6 +27,32 @@ WHITE = "#FFFFFF"
 
 DEFAULT_FOOTER = "每日英语 · Daily English"
 SLANG_FOOTER = "Slang Lab | 每天一个地道Slang"
+
+# 俚语主题 → 主色（封面/徽章配色用）
+THEME_COLORS = {
+    "职场": "#1D4ED8",
+    "学生": "#0D9488",
+    "日常生活": "#EA580C",
+    "社交": "#7C3AED",
+    "网络热词": "#DB2777",
+    "情感": "#DC2626",
+}
+
+
+def _theme_color(theme: str) -> str:
+    return THEME_COLORS.get((theme or "").strip(), ACCENT)
+
+
+def _mix_hex(h1: str, h2: str, t: float) -> str:
+    """把 h1 与白色 h2 按 t 混合，t∈[0,1]，用于生成浅色变体。"""
+    def _rgb(h: str):
+        h = h.lstrip("#")
+        return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+    a = _rgb(h1)
+    b = _rgb(h2)
+    c = tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
+    return "#{:02x}{:02x}{:02x}".format(*c)
 REGULAR = "NotoSansCJKsc-Regular"
 BOLD = "NotoSansCJKsc-Bold"
 # 含完整 IPA 音标符号的拉丁字体（Noto Sans CJK 缺少部分音标字符）
@@ -419,22 +445,98 @@ def render_all(content, out_dir: Path) -> None:
 # ---- 俚语模块 ----
 
 def _render_slang_main(content, out_dir: Path) -> None:
-    blocks = [
-        {"kind": "heading", "text": "今日地道俚语"},
-        {"kind": "word", "text": content.slang},
-    ]
-    if content.phonetic:
-        blocks.append({"kind": "meta", "text": content.phonetic})
-    blocks.append({"kind": "divider"})
-    blocks.append({"kind": "label", "text": "释义 Meaning"})
-    blocks.append({"kind": "para", "text": content.meaning_en, "color": BODY})
-    blocks.append({"kind": "para", "text": content.meaning_zh, "color": INK, "bold": True})
-    blocks.append({"kind": "divider"})
-    if content.source:
-        blocks.append(
-            {"kind": "para", "text": f"来源：{content.source}", "size": 28, "color": MUTED, "gap": 0}
+    """俚语封面：按主题配色 + 大色块 + 主题徽章，更吸睛。"""
+    img = Image.new("RGB", (W, H), BG)
+    draw = ImageDraw.Draw(img)
+
+    theme = (content.theme or "").strip()
+    tc = _theme_color(theme)
+    tlight = _mix_hex(tc, "#FFFFFF", 0.86)  # 浅色底（预留，备用）
+
+    # 顶部主题色条
+    draw.rectangle([0, 0, W, HEADER_H], fill=tc)
+    brand = _font(BOLD, 34)
+    draw.text((MARGIN, 42), "Slang Lab · 地道俚语", font=brand, fill=WHITE)
+    if theme:
+        pf = _font(BOLD, 26)
+        ptext = theme
+        pw = draw.textlength(ptext, font=pf)
+        draw.rounded_rectangle(
+            [CONTENT_RIGHT - pw - 34, 44, CONTENT_RIGHT, 44 + 40],
+            radius=20,
+            fill=_mix_hex(tc, "#FFFFFF", 0.35),
         )
-    _render_blocks(blocks, out_dir / "01.png", "地道俚语 · Slang", footer=SLANG_FOOTER)
+        draw.text((CONTENT_RIGHT - pw - 17, 54), ptext, font=pf, fill=WHITE)
+
+    # 大色块主视觉：俚语
+    y = HEADER_H + TOP_PAD - 6
+    pad_x = 40
+    inner_w = CONTENT_WIDTH - pad_x * 2
+    word = content.slang or "Slang"
+    word_size = _s(92, 1.0)
+    while word_size > 40:
+        f = _font(BOLD, word_size)
+        if draw.textlength(word, font=f) <= inner_w:
+            break
+        word_size -= 4
+    wf = _font(BOLD, word_size)
+    word_lh = _line_height(wf)
+
+    phonetic = content.phonetic or ""
+    phf = _font(NOTO_LATIN, 34)
+    ph_lh = _line_height(phf) if phonetic else 0
+
+    block_h = pad_x * 2 + word_lh + (ph_lh + 10 if phonetic else 0)
+    draw.rounded_rectangle(
+        [MARGIN, y, CONTENT_RIGHT, y + block_h], radius=26, fill=tc
+    )
+    # 装饰圆点
+    draw.ellipse([CONTENT_RIGHT - 90, y + 12, CONTENT_RIGHT - 30, y + 72], fill=_mix_hex(tc, "#FFFFFF", 0.20))
+    draw.ellipse([MARGIN + 24, y + block_h - 78, MARGIN + 74, y + block_h - 28], fill=_mix_hex(tc, "#FFFFFF", 0.15))
+
+    cx = W / 2
+    ww = draw.textlength(word, font=wf)
+    draw.text((cx - ww / 2, y + pad_x), word, font=wf, fill=WHITE)
+    yy = y + pad_x + word_lh + 10
+    if phonetic:
+        pw2 = draw.textlength(phonetic, font=phf)
+        draw.text((cx - pw2 / 2, yy), phonetic, font=phf, fill=_mix_hex(tc, "#FFFFFF", 0.85))
+    y += block_h + 30
+
+    # 释义
+    def _fit(text, name, size):
+        while size > 24:
+            f = _font(name, size)
+            if len(wrap_text(draw, text, f, CONTENT_WIDTH)) * _line_height(f) + y <= H - FOOTER_H - 40:
+                return size, f
+            size -= 2
+        f = _font(name, 24)
+        return size, f
+
+    mf = _font(BOLD, 30)
+    draw.text((MARGIN, y), "释义 MEANING", font=mf, fill=tc)
+    y += _line_height(mf) + 6
+    draw.rectangle([MARGIN, y, MARGIN + 90, y + 6], fill=tc)
+    y += 24
+
+    size, f1 = _fit(content.meaning_en, REGULAR, 40)
+    for line in wrap_text(draw, content.meaning_en, f1, CONTENT_WIDTH):
+        draw.text((MARGIN, y), line, font=f1, fill=BODY)
+        y += _line_height(f1)
+    y += 6
+    size, f2 = _fit(content.meaning_zh, BOLD, 40)
+    for line in wrap_text(draw, content.meaning_zh, f2, CONTENT_WIDTH):
+        draw.text((MARGIN, y), line, font=f2, fill=INK)
+        y += _line_height(f2)
+
+    # 来源
+    if content.source:
+        y = max(y + 14, H - FOOTER_H - 66)
+        sf = _font(REGULAR, 28)
+        draw.text((MARGIN, y), f"来源：{content.source}", font=sf, fill=MUTED)
+
+    _draw_footer(draw, SLANG_FOOTER)
+    img.save(out_dir / "01.png")
 
 
 def _render_slang_usage(content, out_dir: Path) -> None:

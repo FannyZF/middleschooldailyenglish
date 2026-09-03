@@ -6,6 +6,13 @@
   <a class="btn" href="/admin">去后台</a>
 </div>
 
+<div class="theme-filter">
+  <a class="chip {{ '' if current_theme else 'chip-on' }}" href="/slang/">全部</a>
+  {% for t in themes %}
+    <a class="chip {{ 'chip-on' if current_theme == t else '' }}" href="/slang/?theme={{ t }}">{{ t }}</a>
+  {% endfor %}
+</div>
+
 <div class="panel export-panel">
   <h2>批量导出</h2>
   <form method="get" action="/slang/export" class="inline-form">
@@ -36,6 +43,7 @@
           <div class="card-date">{{ c.date }}</div>
           <div class="card-title">{{ c.slang or "（无俚语）" }}</div>
           <div class="card-meta">
+            <span class="tag tag-theme">{{ c.theme or "未分类" }}</span>
             <span class="tag">{{ c.status }}</span>
           </div>
         </a>

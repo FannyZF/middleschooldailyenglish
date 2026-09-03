@@ -2,7 +2,9 @@
 {% block title %}{{ c.date }} · 地道俚语{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>{{ c.date }} · 俚语</h1>
+  <h1>{{ c.date }} · 俚语
+    {% if c.theme %}<span class="tag tag-theme">{{ c.theme }}主题</span>{% endif %}
+  </h1>
   <div class="head-actions">
     <a class="btn" href="/slang/{{ c.date }}/download">下载全部 (ZIP)</a>
     <a class="btn ghost" href="/slang/">返回列表</a>

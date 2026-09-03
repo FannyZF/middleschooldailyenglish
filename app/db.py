@@ -45,6 +45,10 @@ def _migrate() -> None:
             conn.execute(
                 text("ALTER TABLE slang_content ADD COLUMN caption TEXT DEFAULT ''")
             )
+        if s_cols and "theme" not in s_cols:
+            conn.execute(
+                text("ALTER TABLE slang_content ADD COLUMN theme VARCHAR(50) DEFAULT ''")
+            )
 
 
 def init_db() -> None:
