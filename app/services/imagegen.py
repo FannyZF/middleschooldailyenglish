@@ -28,31 +28,6 @@ WHITE = "#FFFFFF"
 DEFAULT_FOOTER = "每日英语 · Daily English"
 SLANG_FOOTER = "Slang Lab | 每天一个地道Slang"
 
-# 俚语主题 → 主色（封面/徽章配色用）
-THEME_COLORS = {
-    "职场": "#1D4ED8",
-    "学生": "#0D9488",
-    "日常生活": "#EA580C",
-    "社交": "#7C3AED",
-    "网络热词": "#DB2777",
-    "情感": "#DC2626",
-}
-
-# 俚语主题 → 表情符号（单色字体按主题色渲染）
-THEME_EMOJI = {
-    "职场": "\U0001F4BC",    # 💼
-    "学生": "\U0001F4DA",    # 📚
-    "日常生活": "\u2615",    # ☕
-    "社交": "\U0001F389",    # 🎉
-    "网络热词": "\U0001F4F1",  # 📱
-    "情感": "\U0001F495",    # 💕
-}
-EMOJI_FONT = "NotoEmoji-Var"
-
-
-def _theme_color(theme: str) -> str:
-    return THEME_COLORS.get((theme or "").strip(), ACCENT)
-
 
 def _mix_hex(h1: str, h2: str, t: float) -> str:
     """把 h1 与白色 h2 按 t 混合，t∈[0,1]，用于生成浅色变体。"""
@@ -456,14 +431,10 @@ def render_all(content, out_dir: Path) -> None:
 # ---- 俚语模块 ----
 
 def _render_slang_main(content, out_dir: Path) -> None:
-    """俚语封面：按主题配色 + 主题 emoji + 大色块俚语 + hook 钩子句。"""
+    """俚语封面：统一蓝色系 + 大色块俚语 + hook 钩子句（不显示主题/不用 emoji）。"""
     img = Image.new("RGB", (W, H), BG)
     draw = ImageDraw.Draw(img)
 
-    theme = (content.theme or "").strip()
-    tc = _theme_color(theme)
-    tlight = _mix_hex(tc, "#FFFFFF", 0.86)
-    emoji = THEME_EMOJI.get(theme, "\u2728")
     hook = (content.hook or "").strip()
 
     def _fit_y(text, name, size, max_w):
@@ -475,31 +446,17 @@ def _render_slang_main(content, out_dir: Path) -> None:
         f = _font(name, 24)
         return size, f
 
-    # 顶部主题色条 + 主题徽章（带 emoji）
-    draw.rectangle([0, 0, W, HEADER_H], fill=tc)
+    # 顶部蓝色条
+    draw.rectangle([0, 0, W, HEADER_H], fill=ACCENT)
     brand = _font(BOLD, 34)
     draw.text((MARGIN, 42), "Slang Lab · 地道俚语", font=brand, fill=WHITE)
-    if theme:
-        ef = _font(EMOJI_FONT, 26)
-        pf = _font(BOLD, 26)
-        ptext = f" {theme} " if False else theme
-        pw = draw.textlength(ptext, font=pf)
-        ew = draw.textlength(emoji, font=ef)
-        pill_x1 = CONTENT_RIGHT - pw - ew - 44
-        draw.rounded_rectangle(
-            [pill_x1, 44, CONTENT_RIGHT, 84], radius=20, fill=_mix_hex(tc, "#FFFFFF", 0.35)
-        )
-        draw.text((pill_x1 + 16, 54), emoji, font=ef, fill=WHITE)
-        draw.text((pill_x1 + 16 + ew + 8, 52), ptext, font=pf, fill=WHITE)
 
-    # 主视觉色块：大号主题 emoji + 俚语 + 音标
+    # 主视觉蓝色色块：俚语 + 音标
     y = HEADER_H + TOP_PAD - 6
     pad_x = 40
     inner_w = CONTENT_WIDTH - pad_x * 2
-
-    # 俚语字号自适应
     word = content.slang or "Slang"
-    word_size = _s(90, 1.0)
+    word_size = _s(92, 1.0)
     while word_size > 40:
         f = _font(BOLD, word_size)
         if draw.textlength(word, font=f) <= inner_w:
@@ -508,61 +465,51 @@ def _render_slang_main(content, out_dir: Path) -> None:
     wf = _font(BOLD, word_size)
     word_lh = _line_height(wf)
 
-    big_emoji_size = _s(64, 1.0)
-    ebig = _font(EMOJI_FONT, big_emoji_size)
-    ebig_lh = _line_height(ebig)
-
     phonetic = content.phonetic or ""
     phf = _font(NOTO_LATIN, 32)
     ph_lh = _line_height(phf) if phonetic else 0
 
-    block_h = pad_x + ebig_lh + 12 + word_lh + (ph_lh + 8 if phonetic else 0) + pad_x
-    draw.rounded_rectangle([MARGIN, y, CONTENT_RIGHT, y + block_h], radius=26, fill=tc)
-    # 装饰圆点
-    draw.ellipse([CONTENT_RIGHT - 96, y + 14, CONTENT_RIGHT - 36, y + 74], fill=_mix_hex(tc, "#FFFFFF", 0.20))
-    draw.ellipse([MARGIN + 26, y + block_h - 80, MARGIN + 76, y + block_h - 30], fill=_mix_hex(tc, "#FFFFFF", 0.15))
+    block_h = pad_x * 2 + word_lh + (ph_lh + 8 if phonetic else 0)
+    draw.rounded_rectangle([MARGIN, y, CONTENT_RIGHT, y + block_h], radius=26, fill=ACCENT)
+    draw.ellipse([CONTENT_RIGHT - 96, y + 14, CONTENT_RIGHT - 36, y + 74], fill=_mix_hex(ACCENT, "#FFFFFF", 0.20))
+    draw.ellipse([MARGIN + 26, y + block_h - 80, MARGIN + 76, y + block_h - 30], fill=_mix_hex(ACCENT, "#FFFFFF", 0.15))
 
     cx = W / 2
-    ew_ = draw.textlength(emoji, font=ebig)
-    draw.text((cx - ew_ / 2, y + 18), emoji, font=ebig, fill=WHITE)
-    yy = y + 18 + ebig_lh + 12
     ww = draw.textlength(word, font=wf)
-    draw.text((cx - ww / 2, yy), word, font=wf, fill=WHITE)
-    yy += word_lh + 8
+    draw.text((cx - ww / 2, y + pad_x), word, font=wf, fill=WHITE)
+    yy = y + pad_x + word_lh + 8
     if phonetic:
         pw2 = draw.textlength(phonetic, font=phf)
-        draw.text((cx - pw2 / 2, yy), phonetic, font=phf, fill=_mix_hex(tc, "#FFFFFF", 0.85))
+        draw.text((cx - pw2 / 2, yy), phonetic, font=phf, fill=_mix_hex(ACCENT, "#FFFFFF", 0.85))
     y += block_h + 24
 
-    # hook 钩子句（浅色卡片，带 💬）
+    # hook 钩子句（浅蓝卡片）
     if hook:
         hpad_x, hpad_y = 34, 24
         hw = CONTENT_WIDTH - hpad_x * 2
-        hef = _font(EMOJI_FONT, 34)
         hook_size = 36
         while hook_size >= 26:
             f = _font(BOLD, hook_size)
-            lines = wrap_text(draw, hook, f, hw - 64)
+            lines = wrap_text(draw, hook, f, hw)
             need = hpad_y * 2 + len(lines) * _line_height(f)
             if y + need <= H - FOOTER_H - 60:
                 break
             hook_size -= 2
         hf = _font(BOLD, hook_size)
-        hlines = wrap_text(draw, hook, hf, hw - 64)
+        hlines = wrap_text(draw, hook, hf, hw)
         hh = hpad_y * 2 + len(hlines) * _line_height(hf)
-        draw.rounded_rectangle([MARGIN, y, CONTENT_RIGHT, y + hh], radius=22, fill=tlight)
-        draw.text((MARGIN + hpad_x, y + hpad_y), "\U0001F4AC", font=hef, fill=tc)
+        draw.rounded_rectangle([MARGIN, y, CONTENT_RIGHT, y + hh], radius=22, fill=ACCENT_LIGHT)
         ty = y + hpad_y
         for line in hlines:
-            draw.text((MARGIN + hpad_x + 64, ty), line, font=hf, fill=tc)
+            draw.text((MARGIN + hpad_x, ty), line, font=hf, fill=ACCENT)
             ty += _line_height(hf)
         y += hh + 24
 
     # 释义
     mf = _font(BOLD, 30)
-    draw.text((MARGIN, y), "释义 MEANING", font=mf, fill=tc)
+    draw.text((MARGIN, y), "释义 MEANING", font=mf, fill=ACCENT)
     y += _line_height(mf) + 6
-    draw.rectangle([MARGIN, y, MARGIN + 90, y + 6], fill=tc)
+    draw.rectangle([MARGIN, y, MARGIN + 90, y + 6], fill=ACCENT)
     y += 24
 
     size, f1 = _fit_y(content.meaning_en, REGULAR, 40, CONTENT_WIDTH)
