@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from app.db import SessionLocal
-from app.models import DailyContent
+from app.models import DailyContent, SlangContent
 from app.services import imagegen, lemmy, news, pipeline, reddit, urban
 
 
@@ -104,7 +104,7 @@ def test_generate_slang_for_date(monkeypatch):
     )
     monkeypatch.setattr(
         "app.services.llm.generate_slang",
-        lambda posts, strict=False: {
+        lambda posts, strict=False, avoid=None: {
             "slang": "hit the sack",
             "phonetic": "/hɪt ðə sæk/",
             "meaning_en": "go to bed",
@@ -138,7 +138,7 @@ def test_generate_slang_for_date(monkeypatch):
 def test_slang_not_in_candidates_triggers_retry(monkeypatch):
     calls = {"n": 0}
 
-    def fake_llm(posts, strict=False):
+    def fake_llm(posts, strict=False, avoid=None):
         calls["n"] += 1
         if calls["n"] == 1:
             return {
@@ -191,7 +191,7 @@ def test_slang_source_corrected_from_candidates(monkeypatch):
         }
     ]
 
-    def fake_llm(posts, strict=False):
+    def fake_llm(posts, strict=False, avoid=None):
         return {
             "slang": "lowkey",
             "phonetic": "",
@@ -273,3 +273,45 @@ def test_slang_source_urban_only(monkeypatch):
     got = pipeline._fetch_slang_candidates()
     assert got[0]["title"] == "lowkey"
     assert got[0]["_origin"] == "Urban Dictionary"
+
+
+def test_slang_skip_already_used(monkeypatch):
+    # 造一条历史已发布过的俚语 lowkey
+    db = SessionLocal()
+    db.add(SlangContent(date="2099-02-01", status="generated", slang="lowkey"))
+    db.commit()
+    db.close()
+
+    def fake_fetch():
+        return [
+            {"title": "lowkey", "selftext": "secret", "_origin": "Urban Dictionary", "url": "x"},
+            {"title": "no cap", "selftext": "really", "_origin": "Urban Dictionary", "url": "y"},
+        ]
+
+    monkeypatch.setattr(pipeline, "_fetch_slang_candidates", fake_fetch)
+
+    seen = []
+
+    def fake_llm(posts, strict=False, avoid=None):
+        seen.append([p["title"] for p in posts])
+        return {
+            "slang": "no cap",
+            "phonetic": "",
+            "meaning_en": "for real",
+            "meaning_zh": "真的",
+            "usage": "u",
+            "examples": [{"en": "x", "zh": "y"}],
+            "scenarios": [{"title": "t", "dialogue_en": "A: b", "dialogue_zh": "A：b"}],
+            "source": "s",
+            "source_url": "",
+            "caption": "c",
+        }
+
+    monkeypatch.setattr("app.services.llm.generate_slang", fake_llm)
+    monkeypatch.setattr(imagegen, "render_slang_all", lambda content, out_dir: None)
+
+    row = pipeline.generate_slang_for_date("2099-02-02")
+    assert row.slang == "no cap"
+    # 传给模型做选择的候选不应包含已发布过的 lowkey
+    assert all("lowkey" not in titles for titles in seen)
+    assert "no cap" in seen[0]

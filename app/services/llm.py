@@ -134,16 +134,21 @@ JSON 结构如下：
 """
 
 
-def generate_slang(posts: list[dict], strict: bool = False) -> dict:
+def generate_slang(posts: list[dict], strict: bool = False, avoid: list[str] | None = None) -> dict:
     candidates = json.dumps(posts, ensure_ascii=False)
-    strict_hint = (
-        "\n注意：上次输出的表达不在候选列表中，本次必须严格从候选里挑选一个真实出现的俚语/表达。"
-        if strict
-        else ""
-    )
+    hints = []
+    if avoid:
+        hints.append(
+            "以下表达之前已经发布过，绝对不要重复选择：" + "、".join(sorted(avoid)) + "。"
+        )
+    if strict:
+        hints.append(
+            "上次输出的表达不在候选列表中或已发布过，本次必须严格从候选里挑一个新的真实俚语/表达。"
+        )
+    hint_text = ("\n" + "\n".join(hints)) if hints else ""
     user = (
         "以下是今日候选内容列表（JSON 数组，字段含 title/selftext/source/url/score）：\n\n"
         f"{candidates}\n\n"
-        f"请从中挑选/提炼 1 个最值得学习、适合公开分享的地道俚语并生成内容，严格返回 JSON。{strict_hint}"
+        f"请从中挑选/提炼 1 个最值得学习、适合公开分享的地道俚语并生成内容，严格返回 JSON。{hint_text}"
     )
     return _call_llm(SLANG_SYSTEM_PROMPT, user)

@@ -225,6 +225,23 @@ def _source_label(p: dict) -> str:
     return ""
 
 
+def _used_slangs(db, exclude_day: str | None = None) -> set[str]:
+    """历史已发布过的俚语（小写），用于当日选词去重。"""
+    used: set[str] = set()
+    rows = (
+        db.query(SlangContent)
+        .filter(SlangContent.status == "generated")
+        .filter(SlangContent.slang != "")
+    )
+    for r in rows:
+        if exclude_day and r.date == exclude_day:
+            continue
+        s = (r.slang or "").strip().lower()
+        if s:
+            used.add(s)
+    return used
+
+
 def generate_slang_for_date(day: str) -> SlangContent:
     db = SessionLocal()
     try:
@@ -240,14 +257,37 @@ def generate_slang_for_date(day: str) -> SlangContent:
 
         try:
             posts = _fetch_slang_candidates()
-            data = llm.generate_slang(posts)
-            content = SlangContentData.model_validate(data)
+            used = _used_slangs(db, exclude_day=day)
 
-            # 校验：俚语必须来自候选内容，否则重试一次（防止模型背默认词如 kiss ass）
-            if _find_slang_candidate(content.slang, posts) is None:
-                logger.warning("俚语 %r 不在候选中，重试一次", content.slang)
-                data = llm.generate_slang(posts, strict=True)
-                content = SlangContentData.model_validate(data)
+            # 候选里直接排除已用过的俚语（如 urban 词条标题 == 已用词）
+            if used:
+                filtered = [
+                    p
+                    for p in posts
+                    if (p.get("title") or "").strip().lower() not in used
+                ]
+                if filtered:
+                    posts = filtered
+
+            # 生成 + 去重/候选校验，最多尝试 3 次换词
+            content: SlangContentData | None = None
+            for attempt in range(3):
+                data = llm.generate_slang(posts, strict=(attempt > 0), avoid=list(used))
+                cand = SlangContentData.model_validate(data)
+                s = (cand.slang or "").strip().lower()
+                if s and s in used:
+                    logger.warning("俚语 %r 已发布过，换一个重试", cand.slang)
+                    continue
+                if s and _find_slang_candidate(cand.slang, posts) is None and posts:
+                    logger.warning("俚语 %r 不在候选中，换一个重试", cand.slang)
+                    continue
+                content = cand
+                break
+
+            if content is None:
+                content = SlangContentData.model_validate(
+                    llm.generate_slang(posts, strict=True, avoid=list(used))
+                )
 
             # 来源/链接由真实候选回填，避免模型编造（如 Lemmy 被写成 reddit）
             match = _find_slang_candidate(content.slang, posts)
