@@ -646,43 +646,63 @@ def render_toc_page(entries: list[tuple[str, int]]) -> Image.Image:
 # ---- 每周小测 ----
 
 def render_quiz_question(question: dict, out_path: Path, page_title: str) -> None:
-    """渲染单道周测题卡。question: {situation, options:[4], answer_index, answer_slang, explanation}"""
+    """渲染单道周测题卡：背景 → 朋友英文原话 → 选合适的回应。"""
     img = Image.new("RGB", (W, H), BG)
     draw = ImageDraw.Draw(img)
     _draw_header(draw, "本周小测 · Weekly Quiz")
 
+    def _line_h(name, size):
+        return _line_height(_font(name, size))
+
+    def _wrap(name, size, text, maxw):
+        return wrap_text(draw, text, _font(name, size), maxw)
+
     y = HEADER_H + TOP_PAD
     hf = _font(BOLD, 44)
     draw.text((MARGIN, y), page_title, font=hf, fill=INK)
-    y += _line_height(hf) + 8
+    y += _line_h(BOLD, 44) + 8
     draw.rectangle([MARGIN, y, MARGIN + 120, y + 8], fill=GOLD)
-    y += 40
+    y += 34
 
-    sit_font = _font(BOLD, 40)
-    sit_lines = wrap_text(draw, question.get("situation", ""), sit_font, CONTENT_WIDTH)
-    block_h = len(sit_lines) * _line_height(sit_font) + 34 * 2
-    draw.rounded_rectangle([MARGIN, y, CONTENT_RIGHT, y + block_h], radius=20, fill=ACCENT_LIGHT)
-    ty = y + 30
-    for line in sit_lines:
-        draw.text((MARGIN + 30, ty), line, font=sit_font, fill=INK)
-        ty += _line_height(sit_font)
-    y += block_h + 30
+    # 背景（无底框）
+    lab = _font(BOLD, 28)
+    draw.text((MARGIN, y), "背景", font=lab, fill=MUTED)
+    y += _line_h(BOLD, 28) + 8
+    bg_lines = _wrap(REGULAR, 36, question.get("background", ""), CONTENT_WIDTH)
+    for line in bg_lines:
+        draw.text((MARGIN, y), line, font=_font(REGULAR, 36), fill=BODY)
+        y += _line_h(REGULAR, 36)
+    y += 22
 
-    draw.text((MARGIN, y), "该选哪个？", font=_font(BOLD, 32), fill=ACCENT)
-    y += _line_height(_font(BOLD, 32)) + 16
-    opt_font = _font(REGULAR, 38)
+    # 朋友说（对话式，用引号）
+    draw.text((MARGIN, y), "朋友说", font=lab, fill=MUTED)
+    y += _line_h(BOLD, 28) + 10
+    quote = "“" + question.get("friend_says", "") + "”"
+    qf = _font(REGULAR, 38)
+    q_lines = wrap_text(draw, quote, qf, CONTENT_WIDTH - 40)
+    # 左侧细竖线标记引用，不是色块
+    qh = len(q_lines) * _line_height(qf)
+    draw.line([MARGIN + 16, y, MARGIN + 16, y + qh], fill=GOLD, width=6)
+    for line in q_lines:
+        draw.text((MARGIN + 44, y), line, font=qf, fill=INK)
+        y += _line_height(qf)
+    y += 22
+
+    # 提问
+    draw.text((MARGIN, y), "你会怎么回应？", font=_font(BOLD, 32), fill=INK)
+    y += _line_h(BOLD, 32) + 18
+
+    # 选项
+    opt_font_size = 36
     letters = ["A", "B", "C", "D"]
-    for i, opt in enumerate(question.get("options", [])):
+    opts = question.get("options", [])
+    for i, opt in enumerate(opts):
         text = f"{letters[i]}. {opt}"
-        lines = wrap_text(draw, text, opt_font, CONTENT_WIDTH)
-        cy = y
-        oh = len(lines) * _line_height(opt_font) + 20
-        draw.rounded_rectangle([MARGIN, cy, CONTENT_RIGHT, cy + oh], radius=14, fill=CARD, outline=LINE, width=2)
-        tx = cy + 10
-        for line in lines:
-            draw.text((MARGIN + 24, tx), line, font=opt_font, fill=BODY)
-            tx += _line_height(opt_font)
-        y += oh + 14
+        o_lines = _wrap(REGULAR, opt_font_size, text, CONTENT_WIDTH)
+        for line in o_lines:
+            draw.text((MARGIN + 6, y), line, font=_font(REGULAR, opt_font_size), fill=BODY)
+            y += _line_h(REGULAR, opt_font_size)
+        y += 14
 
     _draw_footer(draw, SLANG_FOOTER)
     img.save(out_path)

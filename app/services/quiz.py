@@ -23,8 +23,10 @@ def _validate_questions(questions: list[dict], week_words: set[str]) -> bool:
         return False
     used_correct: set[str] = set()
     for q in questions:
+        if not (q.get("background") or "").strip() or not (q.get("friend_says") or "").strip():
+            return False
         opts = q.get("options") or []
-        if len(opts) < 3:
+        if len(opts) != 4:
             return False
         if len({_norm(o) for o in opts}) != len(opts):
             return False

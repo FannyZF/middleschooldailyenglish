@@ -22,16 +22,20 @@ def _seed_slang(dates):
 def test_validate_questions():
     week = {"slang0", "slang1", "slang2"}
     q = {
+        "background": "朋友吐槽新同事。",
+        "friend_says": "I can't stand that guy.",
         "options": ["slang0", "slang1", "slang2", "outsider"],
         "answer_index": 0,
         "answer_slang": "slang0",
-        "situation": "情境",
         "explanation": "解析",
     }
     assert quiz._validate_questions([q], week)
     bad = dict(q)
     bad["answer_index"] = 3  # 答案是外来词
     assert not quiz._validate_questions([bad], week)
+    missing = dict(q)
+    missing["friend_says"] = ""
+    assert not quiz._validate_questions([missing], week)
 
 
 def test_create_quiz(monkeypatch):
@@ -41,14 +45,16 @@ def test_create_quiz(monkeypatch):
         return {
             "questions": [
                 {
-                    "situation": "加班到很晚还要开会？",
+                    "background": "加班到很晚还想回家。",
+                    "friend_says": "We should keep discussing this tonight.",
                     "options": ["slang0", "slang1", "slang2", "distractorX"],
                     "answer_index": 0,
                     "answer_slang": "slang0",
                     "explanation": "slang0 表示这个意思。",
                 },
                 {
-                    "situation": "朋友吹牛怎么办？",
+                    "background": "朋友在吹牛。",
+                    "friend_says": "I actually met the singer yesterday.",
                     "options": ["slang1", "slang2", "slang0", "distractorY"],
                     "answer_index": 1,
                     "answer_slang": "slang2",
