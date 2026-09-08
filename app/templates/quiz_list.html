@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}本周测试 · 地道俚语{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>本周测试列表</h1>
+  <a class="btn ghost" href="/slang/">返回俚语列表</a>
+</div>
+
+{% if not quizzes %}
+  <div class="empty">
+    <p>还没有生成过周测。回到俚语列表勾选本周发布的内容，点「生成本周测试」。</p>
+    <a class="btn" href="/slang/">去选内容</a>
+  </div>
+{% else %}
+  <div class="grid">
+    {% for q in quizzes %}
+      <div class="card">
+        <a class="card-main" href="/slang/quiz/{{ q.id }}">
+          <div class="card-date">#{{ q.id }} · {{ q.created_at.strftime('%Y-%m-%d') if q.created_at else '' }}</div>
+          <div class="card-title">{{ q.title or "本周小测" }}（{{ q.questions_list()|length }} 题）</div>
+          <div class="card-meta">
+            <span class="tag status-{{ q.status }}">{{ q.status }}</span>
+          </div>
+        </a>
+        <form method="post" action="/slang/quiz/{{ q.id }}/delete" onsubmit="return confirm('确认删除该周测？删除后不可恢复。')">
+          <button type="submit" class="btn-danger">删除</button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

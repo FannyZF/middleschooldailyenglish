@@ -3,8 +3,21 @@
 {% block content %}
 <div class="page-head">
   <h1>地道俚语</h1>
-  <a class="btn" href="/admin">去后台</a>
+  <div class="head-actions">
+    <a class="btn" href="/slang/quizzes">本周测试</a>
+    <a class="btn ghost" href="/admin">后台</a>
+  </div>
 </div>
+
+{% if contents %}
+<div class="quiz-bar">
+  <form method="post" action="/slang/quiz/create" onsubmit="return quizValidate(event)">
+    <span class="quiz-hint">勾选本周发布过的内容，生成每周小测：</span>
+    <button type="submit" class="btn">生成本周测试</button>
+  </form>
+  <div class="quiz-select-hint muted" id="quiz-sel-hint">已选 <span id="quiz-count">0</span> 条（建议 5-7 条，最少 2 条）</div>
+</div>
+{% endif %}
 
 <div class="theme-filter">
   <a class="chip {{ '' if current_theme else 'chip-on' }}" href="/slang/">全部</a>
@@ -52,6 +65,12 @@
   <div class="grid">
     {% for c in contents %}
       <div class="card">
+        {% if c.status == "generated" %}
+        <label class="card-select">
+          <input type="checkbox" name="sel" value="{{ c.date }}" data-label="{{ c.date }} · {{ c.slang }}" onchange="updateQuizCount()">
+          <span>选做本周测试</span>
+        </label>
+        {% endif %}
         <a class="card-main" href="/slang/{{ c.date }}">
           <div class="card-date">{{ c.date }}</div>
           <div class="card-title">{{ c.slang or "（无俚语）" }}</div>
@@ -67,4 +86,19 @@
     {% endfor %}
   </div>
 {% endif %}
+
+<script>
+function quizValidate(ev) {
+  var boxes = document.querySelectorAll('input[name="sel"]:checked');
+  if (boxes.length < 2) { alert('请至少勾选 2 条本周内容'); ev.preventDefault(); return false; }
+  // 把选中的日期写入隐藏提交（用当前表单动态构建）
+  var form = ev.target;
+  boxes.forEach(function(b){ var inp=document.createElement('input'); inp.type='hidden'; inp.name='dates'; inp.value=b.value; form.appendChild(inp); });
+  return true;
+}
+function updateQuizCount() {
+  var n = document.querySelectorAll('input[name="sel"]:checked').length;
+  var el = document.getElementById('quiz-count'); if (el) el.textContent = n;
+}
+</script>
 {% endblock %}

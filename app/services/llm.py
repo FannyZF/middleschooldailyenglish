@@ -161,3 +161,34 @@ def generate_slang(
         f"请从中挑选/提炼 1 个最值得学习、适合公开分享的地道俚语并生成内容，严格返回 JSON。{hint_text}"
     )
     return _call_llm(SLANG_SYSTEM_PROMPT, user)
+
+
+QUIZ_SYSTEM_PROMPT = """你是一名面向成年人的地道英语老师，负责为一周发布过的俚语出「情境→选俚语」选择题，帮助读者检验掌握情况。
+
+出题要求：
+1. 给定本周发布过的俚语列表（每个含俚语、中文释义、一条使用场景），再给定若干候选干扰词。
+2. 生成 2 道选择题。每题：
+   - situation：用中文写一个真实、口语化的小情境（第二人称，几秒能读懂）。
+   - options：4 个英文俚语选项。其中 3 个从【本周俚语】中选（正确答案必须是其中之一）；另外 1 个从【候选干扰词】中挑一个（确保与情境不合、且不属于本周俚语）。
+   - answer_index：正确选项在 options 里的下标（0~3，0 对应 A）。
+   - answer_slang：正确答案的俚语文本。
+   - explanation：用中文一句话说明为什么选它。
+3. 情境要避免直接说出答案；2 道题尽量覆盖本周不同俚语，题目之间不要重复用同一个正确答案。
+4. 干扰词若与某本周词相同，自动换一个。
+
+你必须严格只返回一个 JSON 对象：
+{
+  "questions": [
+    {"situation": "中文情境", "options": ["俚语1", "俚语2", "俚语3", "干扰词"], "answer_index": 0, "answer_slang": "俚语1", "explanation": "中文解析"}
+  ]
+}
+"""
+
+
+def generate_quiz(week_slangs: list[dict], distractor_pool: list[str]) -> dict:
+    payload = json.dumps(
+        {"week_slangs": week_slangs, "distractor_pool": distractor_pool},
+        ensure_ascii=False,
+    )
+    user = f"以下是本周俚语与候选干扰词：\n\n{payload}\n\n请生成 2 道情境→选俚语选择题，严格返回 JSON。"
+    return _call_llm(QUIZ_SYSTEM_PROMPT, user)

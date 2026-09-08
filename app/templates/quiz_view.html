@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}周测 #{{ q.id }} · 每日英语{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ q.title or "本周小测" }} #{{ q.id }}</h1>
+  <div class="head-actions">
+    <a class="btn" href="/slang/quiz/{{ q.id }}/download">下载全部 (ZIP)</a>
+    <a class="btn ghost" href="/slang/quizzes">测试列表</a>
+    <form method="post" action="/slang/quiz/{{ q.id }}/delete" onsubmit="return confirm('确认删除该周测？删除后不可恢复。')" style="display:inline">
+      <button type="submit" class="btn-danger">删除</button>
+    </form>
+  </div>
+</div>
+
+{% if q.status == "failed" %}
+  <div class="error-banner">生成失败：{{ q.error }}</div>
+{% elif q.status == "generated" %}
+<div class="panel">
+  <h2>覆盖内容</h2>
+  <p class="muted">{{ q.source_dates_list() | join('、') }}</p>
+</div>
+<div class="images-grid">
+  {% for i in range(1, n + 1) %}
+  <div class="img-block">
+    <img src="/slang/quiz/{{ q.id }}/image/question-{{ i }}.png" alt="第{{ i }}题">
+    <div class="img-actions"><span>第 {{ i }} 题</span><a href="/slang/quiz/{{ q.id }}/download" download>下载</a></div>
+  </div>
+  {% endfor %}
+  <div class="img-block">
+    <img src="/slang/quiz/{{ q.id }}/image/answer.png" alt="答案">
+    <div class="img-actions"><span>答案</span><a href="/slang/quiz/{{ q.id }}/download" download>下载</a></div>
+  </div>
+</div>
+{% else %}
+  <div class="empty"><p>内容尚未生成。</p></div>
+{% endif %}
+{% endblock %}

@@ -641,3 +641,93 @@ def render_toc_page(entries: list[tuple[str, int]]) -> Image.Image:
 
     _draw_footer(draw, SLANG_FOOTER)
     return img
+
+
+# ---- 每周小测 ----
+
+def render_quiz_question(question: dict, out_path: Path, page_title: str) -> None:
+    """渲染单道周测题卡。question: {situation, options:[4], answer_index, answer_slang, explanation}"""
+    img = Image.new("RGB", (W, H), BG)
+    draw = ImageDraw.Draw(img)
+    _draw_header(draw, "本周小测 · Weekly Quiz")
+
+    y = HEADER_H + TOP_PAD
+    hf = _font(BOLD, 44)
+    draw.text((MARGIN, y), page_title, font=hf, fill=INK)
+    y += _line_height(hf) + 8
+    draw.rectangle([MARGIN, y, MARGIN + 120, y + 8], fill=GOLD)
+    y += 40
+
+    sit_font = _font(BOLD, 40)
+    sit_lines = wrap_text(draw, question.get("situation", ""), sit_font, CONTENT_WIDTH)
+    block_h = len(sit_lines) * _line_height(sit_font) + 34 * 2
+    draw.rounded_rectangle([MARGIN, y, CONTENT_RIGHT, y + block_h], radius=20, fill=ACCENT_LIGHT)
+    ty = y + 30
+    for line in sit_lines:
+        draw.text((MARGIN + 30, ty), line, font=sit_font, fill=INK)
+        ty += _line_height(sit_font)
+    y += block_h + 30
+
+    draw.text((MARGIN, y), "该选哪个？", font=_font(BOLD, 32), fill=ACCENT)
+    y += _line_height(_font(BOLD, 32)) + 16
+    opt_font = _font(REGULAR, 38)
+    letters = ["A", "B", "C", "D"]
+    for i, opt in enumerate(question.get("options", [])):
+        text = f"{letters[i]}. {opt}"
+        lines = wrap_text(draw, text, opt_font, CONTENT_WIDTH)
+        cy = y
+        oh = len(lines) * _line_height(opt_font) + 20
+        draw.rounded_rectangle([MARGIN, cy, CONTENT_RIGHT, cy + oh], radius=14, fill=CARD, outline=LINE, width=2)
+        tx = cy + 10
+        for line in lines:
+            draw.text((MARGIN + 24, tx), line, font=opt_font, fill=BODY)
+            tx += _line_height(opt_font)
+        y += oh + 14
+
+    _draw_footer(draw, SLANG_FOOTER)
+    img.save(out_path)
+
+
+def render_quiz_answers(questions: list[dict], out_path: Path) -> None:
+    """渲染周测答案页。"""
+    img = Image.new("RGB", (W, H), BG)
+    draw = ImageDraw.Draw(img)
+    _draw_header(draw, "本周小测 · 答案")
+
+    y = HEADER_H + TOP_PAD
+    hf = _font(BOLD, 44)
+    draw.text((MARGIN, y), "参考答案", font=hf, fill=INK)
+    y += _line_height(hf) + 8
+    draw.rectangle([MARGIN, y, MARGIN + 120, y + 8], fill=GOLD)
+    y += 34
+
+    letters = ["A", "B", "C", "D"]
+    for i, q in enumerate(questions, start=1):
+        ans = q.get("answer_index", 0)
+        letter = letters[ans] if 0 <= ans < len(letters) else "?"
+        slang = q.get("answer_slang", "")
+        expl = q.get("explanation", "")
+        body = f"第{i}题答案：{letter} · {slang}"
+        bf = _font(BOLD, 38)
+        draw.text((MARGIN, y), body, font=bf, fill=ACCENT)
+        y += _line_height(bf) + 8
+        if expl:
+            ef = _font(REGULAR, 34)
+            for line in wrap_text(draw, expl, ef, CONTENT_WIDTH):
+                draw.text((MARGIN, y), line, font=ef, fill=BODY)
+                y += _line_height(ef)
+        y += 22
+        if i < len(questions):
+            draw.line([MARGIN, y, CONTENT_RIGHT, y], fill=LINE, width=2)
+            y += 20
+
+    _draw_footer(draw, SLANG_FOOTER)
+    img.save(out_path)
+
+
+def render_quiz_all(questions: list[dict], out_dir: Path) -> None:
+    """周测出图：每题 1 张题卡 + 1 张答案，共 len(questions)+1 张。"""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for i, q in enumerate(questions, start=1):
+        render_quiz_question(q, out_dir / f"question-{i}.png", f"第 {i} 题")
+    render_quiz_answers(questions, out_dir / "answer.png")

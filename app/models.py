@@ -103,3 +103,28 @@ class SlangContent(Base):
             return json.loads(self.scenarios or "[]")
         except json.JSONDecodeError:
             return []
+
+
+class WeeklyQuiz(Base):
+    __tablename__ = "weekly_quiz"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(200), default="")   # 如 "本周小测 · 情境选俚语"
+    source_dates = Column(Text, default="[]")  # JSON list，选中的俚语日期
+    questions = Column(Text, default="[]")     # JSON list {situation, options[4], answer_index, answer_slang, explanation}
+    status = Column(String(20), default="pending")  # pending / generated / failed
+    error = Column(Text, default="")
+    image_dir = Column(String(255), default="")
+    created_at = Column(DateTime, server_default=func.now())
+
+    def source_dates_list(self):
+        try:
+            return json.loads(self.source_dates or "[]")
+        except json.JSONDecodeError:
+            return []
+
+    def questions_list(self):
+        try:
+            return json.loads(self.questions or "[]")
+        except json.JSONDecodeError:
+            return []

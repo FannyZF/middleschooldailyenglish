@@ -81,6 +81,16 @@ a.btn, button, .btn {
 .simple-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .simple-table th, .simple-table td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; }
 .simple-table th { color: var(--muted); font-weight: 600; }
+
+.quiz-bar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 12px; padding: 12px 16px; margin-bottom: 18px;
+}
+.quiz-bar form { display: inline-flex; align-items: center; gap: 12px; }
+.quiz-hint { font-size: 14px; color: var(--ink); }
+.quiz-select-hint { font-size: 13px; }
+.card-select { display: block; margin-bottom: 8px; font-size: 13px; color: var(--accent); cursor: pointer; }
+.card-select input { margin-right: 6px; transform: scale(1.15); }
 .status { font-size: 12px; color: var(--muted); }
 .status-generated { color: #16a34a; }
 .status-failed { color: var(--danger); }
