@@ -104,7 +104,7 @@ def test_generate_slang_for_date(monkeypatch):
     )
     monkeypatch.setattr(
         "app.services.llm.generate_slang",
-        lambda posts, strict=False, avoid=None: {
+        lambda posts, strict=False, avoid=None, forced=None: {
             "slang": "hit the sack",
             "phonetic": "/hɪt ðə sæk/",
             "meaning_en": "go to bed",
@@ -138,7 +138,7 @@ def test_generate_slang_for_date(monkeypatch):
 def test_slang_not_in_candidates_triggers_retry(monkeypatch):
     calls = {"n": 0}
 
-    def fake_llm(posts, strict=False, avoid=None):
+    def fake_llm(posts, strict=False, avoid=None, forced=None):
         calls["n"] += 1
         if calls["n"] == 1:
             return {
@@ -191,7 +191,7 @@ def test_slang_source_corrected_from_candidates(monkeypatch):
         }
     ]
 
-    def fake_llm(posts, strict=False, avoid=None):
+    def fake_llm(posts, strict=False, avoid=None, forced=None):
         return {
             "slang": "lowkey",
             "phonetic": "",
@@ -292,7 +292,7 @@ def test_slang_skip_already_used(monkeypatch):
 
     seen = []
 
-    def fake_llm(posts, strict=False, avoid=None):
+    def fake_llm(posts, strict=False, avoid=None, forced=None):
         seen.append([p["title"] for p in posts])
         return {
             "slang": "no cap",
@@ -315,3 +315,16 @@ def test_slang_skip_already_used(monkeypatch):
     # 传给模型做选择的候选不应包含已发布过的 lowkey
     assert all("lowkey" not in titles for titles in seen)
     assert "no cap" in seen[0]
+
+
+def test_pick_unused_title_prefers_urban_unused():
+    posts = [
+        {"title": "hit the sack", "_origin": "Urban Dictionary"},
+        {"title": "no cap", "_origin": "Urban Dictionary"},
+        {"title": "some forum post about lowkey", "_origin": "Lemmy"},
+    ]
+    used = {"hit the sack"}
+    picked = pipeline._pick_unused_title(posts, used)
+    assert picked == "no cap"
+    assert pipeline._pick_unused_title(posts, {"hit the sack", "no cap"}) == "some forum post about lowkey"
+    assert pipeline._pick_unused_title(posts, {p["title"].lower() for p in posts}) is None

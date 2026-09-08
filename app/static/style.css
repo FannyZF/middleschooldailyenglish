@@ -77,6 +77,10 @@ a.btn, button, .btn {
 }
 .chip:hover { border-color: var(--accent); color: var(--accent); }
 .chip-on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.simple-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.simple-table th, .simple-table td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; }
+.simple-table th { color: var(--muted); font-weight: 600; }
 .status { font-size: 12px; color: var(--muted); }
 .status-generated { color: #16a34a; }
 .status-failed { color: var(--danger); }

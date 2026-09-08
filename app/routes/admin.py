@@ -1,15 +1,60 @@
-from datetime import date
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 
 from ..auth import get_current_user
 from ..config import settings
+from ..db import SessionLocal
+from ..models import DailyContent, SlangContent
 from ..scheduler import cron_to_time, reload_scheduler, time_to_cron
 from ..services import pipeline
 from ..services.settings import get_setting, set_setting
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
+
+
+def _has_generated(module: str, day: str) -> bool:
+    db = SessionLocal()
+    try:
+        model = DailyContent if module == "news" else SlangContent
+        row = db.query(model).filter(model.date == day, model.status == "generated").first()
+        return row is not None
+    finally:
+        db.close()
+
+
+@router.post("/admin/generate-range")
+def generate_range(request: Request, module: str = Form(...), start: str = Form(...), end: str = Form(...)):
+    try:
+        d0 = date.fromisoformat(start)
+        d1 = date.fromisoformat(end)
+    except ValueError:
+        return RedirectResponse("/admin", status_code=302)
+
+    results: list[dict] = []
+    if d1 >= d0:
+        cur = d0
+        while cur <= d1:
+            day = cur.isoformat()
+            if _has_generated(module, day):
+                results.append({"day": day, "status": "已存在，跳过"})
+            else:
+                try:
+                    if module == "news":
+                        pipeline.generate_for_date(day)
+                    else:
+                        pipeline.generate_slang_for_date(day)
+                    results.append({"day": day, "status": "生成成功"})
+                except Exception as e:
+                    results.append({"day": day, "status": f"失败：{e}"})
+            cur += timedelta(days=1)
+
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "range_result.html",
+        {"module": module, "results": results},
+    )
 
 
 @router.get("/admin")

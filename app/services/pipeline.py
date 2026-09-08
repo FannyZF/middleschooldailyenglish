@@ -225,6 +225,29 @@ def _source_label(p: dict) -> str:
     return ""
 
 
+def _pick_unused_title(posts: list[dict], used: set[str]) -> str | None:
+    """兜底：挑一个未发布过、且适合当词的候选标题（优先词典词条/短语较短的）。"""
+    def _score(p: dict) -> int:
+        title = (p.get("title") or "").strip()
+        n = len(title.split())
+        # 词典词条优先；越短越像词/短语
+        score = 0
+        if p.get("_origin") == "Urban Dictionary":
+            score += 100
+        score -= n * 10
+        return score
+
+    unused = [
+        p
+        for p in posts
+        if (p.get("title") or "").strip().lower() not in used and (p.get("title") or "").strip()
+    ]
+    if not unused:
+        return None
+    unused.sort(key=_score, reverse=True)
+    return unused[0]["title"].strip()
+
+
 def _used_slangs(db, exclude_day: str | None = None) -> set[str]:
     """历史已发布过的俚语（小写），用于当日选词去重。"""
     used: set[str] = set()
@@ -284,9 +307,11 @@ def generate_slang_for_date(day: str) -> SlangContent:
                 content = cand
                 break
 
+            # 兜底：若仍没选到合适词，强制指定一个未用过的候选词重生成，杜绝重复
             if content is None:
+                forced = _pick_unused_title(posts, used)
                 content = SlangContentData.model_validate(
-                    llm.generate_slang(posts, strict=True, avoid=list(used))
+                    llm.generate_slang(posts, strict=True, avoid=list(used), forced=forced)
                 )
 
             # 来源/链接由真实候选回填，避免模型编造（如 Lemmy 被写成 reddit）

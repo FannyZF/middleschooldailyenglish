@@ -26,6 +26,23 @@
 </div>
 
 <div class="panel">
+  <h2>批量补历史内容</h2>
+  <form method="post" action="/admin/generate-range" class="inline-form">
+    <label>模块</label>
+    <select name="module">
+      <option value="news">初中英语</option>
+      <option value="slang">地道俚语</option>
+    </select>
+    <label>开始日期</label>
+    <input type="date" name="start" required>
+    <label>结束日期</label>
+    <input type="date" name="end" required>
+    <button type="submit">批量生成</button>
+  </form>
+  <p class="muted">按日期范围逐天生成，已生成过的日期会自动跳过；俚语会自动避开历史已用过的表达。范围较大会耗时较久。</p>
+</div>
+
+<div class="panel">
   <h2>API Key 与定时</h2>
   <form method="post" action="/admin/settings">
     <label>DeepSeek API Key</label>

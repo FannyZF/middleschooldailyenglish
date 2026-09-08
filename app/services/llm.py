@@ -134,14 +134,23 @@ JSON 结构如下：
 """
 
 
-def generate_slang(posts: list[dict], strict: bool = False, avoid: list[str] | None = None) -> dict:
+def generate_slang(
+    posts: list[dict],
+    strict: bool = False,
+    avoid: list[str] | None = None,
+    forced: str | None = None,
+) -> dict:
     candidates = json.dumps(posts, ensure_ascii=False)
     hints = []
+    if forced:
+        hints.append(
+            f"本次俚语已确定为：{forced}。你必须围绕它生成内容，输出 JSON 的 slang 字段必须等于：{forced}。"
+        )
     if avoid:
         hints.append(
             "以下表达之前已经发布过，绝对不要重复选择：" + "、".join(sorted(avoid)) + "。"
         )
-    if strict:
+    if strict and not forced:
         hints.append(
             "上次输出的表达不在候选列表中或已发布过，本次必须严格从候选里挑一个新的真实俚语/表达。"
         )

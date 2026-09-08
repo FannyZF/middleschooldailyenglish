@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}批量生成结果 · 每日英语{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>批量生成结果 · {{ "初中英语" if module == "news" else "地道俚语" }}</h1>
+  <a class="btn ghost" href="/admin">返回后台</a>
+</div>
+
+<div class="panel">
+  {% set ok = results | selectattr('status', 'equalto', '生成成功') | list | length %}
+  {% set skip = results | selectattr('status', 'equalto', '已存在，跳过') | list | length %}
+  <p>成功 {{ ok }} 天，跳过 {{ skip }} 天{% if results|length > ok + skip %}，有失败项见下表{% endif %}。</p>
+</div>
+
+<div class="panel">
+  <table class="simple-table">
+    <thead><tr><th>日期</th><th>结果</th></tr></thead>
+    <tbody>
+      {% for r in results %}
+      <tr>
+        <td>{{ r.day }}</td>
+        <td>{{ r.status }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
