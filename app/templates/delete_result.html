@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}批量删除结果 · 每日英语{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>批量删除结果</h1>
+  <a class="btn ghost" href="/admin">返回后台</a>
+</div>
+
+<div class="panel">
+  <p>已删除 <strong>{{ "初中英语" if module == "news" else "地道俚语" }}</strong> 模块 {{ start }} ~ {{ end }} 的内容，共 <strong>{{ count }}</strong> 条（含对应图片文件）。</p>
+  {% if module == "news" %}<a class="btn" href="/">去内容列表</a>{% else %}<a class="btn" href="/slang/">去俚语列表</a>{% endif %}
+</div>
+{% endblock %}

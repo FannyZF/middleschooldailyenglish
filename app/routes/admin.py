@@ -1,3 +1,4 @@
+import shutil
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -14,10 +15,14 @@ from ..services.settings import get_setting, set_setting
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
+def _model(module: str):
+    return DailyContent if module == "news" else SlangContent
+
+
 def _has_generated(module: str, day: str) -> bool:
     db = SessionLocal()
     try:
-        model = DailyContent if module == "news" else SlangContent
+        model = _model(module)
         row = db.query(model).filter(model.date == day, model.status == "generated").first()
         return row is not None
     finally:
@@ -54,6 +59,32 @@ def generate_range(request: Request, module: str = Form(...), start: str = Form(
         request,
         "range_result.html",
         {"module": module, "results": results},
+    )
+
+
+@router.post("/admin/delete-range")
+def delete_range(request: Request, module: str = Form(...), start: str = Form(...), end: str = Form(...)):
+    model = _model(module)
+    db = SessionLocal()
+    count = 0
+    try:
+        rows = (
+            db.query(model)
+            .filter(model.date >= start, model.date <= end)
+            .all()
+        )
+        for r in rows:
+            if r.image_dir:
+                shutil.rmtree(r.image_dir, ignore_errors=True)
+            db.delete(r)
+            count += 1
+        db.commit()
+    finally:
+        db.close()
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "delete_result.html",
+        {"module": module, "start": start, "end": end, "count": count},
     )
 
 
