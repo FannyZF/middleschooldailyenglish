@@ -14,6 +14,19 @@
 </div>
 
 <div class="panel export-panel">
+  <h2>日期筛选</h2>
+  <form method="get" action="/slang/" class="inline-form">
+    <input type="hidden" name="theme" value="{{ current_theme }}">
+    <label>开始日期</label>
+    <input type="date" name="start" value="{{ start }}">
+    <label>结束日期</label>
+    <input type="date" name="end" value="{{ end }}">
+    <button type="submit">筛选</button>
+    {% if start or end %}<a class="btn ghost" href="/slang/">清除</a>{% endif %}
+  </form>
+</div>
+
+<div class="panel export-panel">
   <h2>批量导出</h2>
   <form method="get" action="/slang/export" class="inline-form">
     <label>开始日期</label>

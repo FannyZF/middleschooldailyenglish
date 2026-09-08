@@ -18,6 +18,18 @@
   <p class="muted">不填日期则导出全部内容；按日期范围打包成 ZIP 下载。</p>
 </div>
 
+<div class="panel export-panel">
+  <h2>日期筛选</h2>
+  <form method="get" action="/" class="inline-form">
+    <label>开始日期</label>
+    <input type="date" name="start" value="{{ start }}">
+    <label>结束日期</label>
+    <input type="date" name="end" value="{{ end }}">
+    <button type="submit">筛选</button>
+    {% if start or end %}<a class="btn ghost" href="/">清除</a>{% endif %}
+  </form>
+</div>
+
 {% if not contents %}
   <div class="empty">
     <p>还没有内容，去后台「立即生成今日」吧。</p>

@@ -17,17 +17,23 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("/slang/")
-def index(request: Request, theme: str = ""):
+def index(request: Request, theme: str = "", start: str = "", end: str = ""):
     db = SessionLocal()
     try:
         q = db.query(SlangContent).order_by(SlangContent.date.desc())
         if theme:
             q = q.filter(SlangContent.theme == theme)
+        if start:
+            q = q.filter(SlangContent.date >= start)
+        if end:
+            q = q.filter(SlangContent.date <= end)
         rows = q.all()
     finally:
         db.close()
     return request.app.state.templates.TemplateResponse(
-        request, "slang_index.html", {"contents": rows, "themes": THEMES, "current_theme": theme}
+        request,
+        "slang_index.html",
+        {"contents": rows, "themes": THEMES, "current_theme": theme, "start": start, "end": end},
     )
 
 

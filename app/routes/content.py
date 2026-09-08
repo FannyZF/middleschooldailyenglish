@@ -14,14 +14,21 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("/")
-def index(request: Request):
+def index(request: Request, start: str = "", end: str = ""):
     db = SessionLocal()
     try:
-        rows = db.query(DailyContent).order_by(DailyContent.date.desc()).all()
+        q = db.query(DailyContent).order_by(DailyContent.date.desc())
+        if start:
+            q = q.filter(DailyContent.date >= start)
+        if end:
+            q = q.filter(DailyContent.date <= end)
+        rows = q.all()
     finally:
         db.close()
     return request.app.state.templates.TemplateResponse(
-        request, "index.html", {"contents": rows}
+        request,
+        "index.html",
+        {"contents": rows, "start": start, "end": end},
     )
 
 
