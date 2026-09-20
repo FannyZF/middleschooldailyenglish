@@ -78,4 +78,5 @@ class SlangContent(BaseModel):
     source_url: str = ""
     caption: str = ""  # 社交平台发布文案
     hook: str = ""  # 封面钩子句（一句话真实场景）
+    title: str = ""  # 小红书发布标题
     theme: str = ""  # 主题：职场/学生/日常生活/社交/网络热词/情感

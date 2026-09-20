@@ -73,7 +73,7 @@
         {% endif %}
         <a class="card-main" href="/slang/{{ c.date }}">
           <div class="card-date">{{ c.date }}</div>
-          <div class="card-title">{{ c.slang or "（无俚语）" }}</div>
+          <div class="card-title">{{ c.title or c.slang or "（无俚语）" }}</div>
           <div class="card-meta">
             <span class="tag tag-theme">{{ c.theme or "未分类" }}</span>
             <span class="tag">{{ c.status }}</span>

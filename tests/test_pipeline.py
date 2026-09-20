@@ -122,6 +122,7 @@ def test_generate_slang_for_date(monkeypatch):
             "source_url": "https://www.reddit.com/x",
             "caption": "你是否有过很累的经历？不要再说 go to bed 了，用 hit the sack 吧！",
             "hook": "累到睁不开眼却还想再刷一会儿手机？",
+            "title": "困到睁不开眼？老外说的 hit the sack 就是这个意思",
             "theme": "日常生活",
         },
     )
@@ -131,6 +132,7 @@ def test_generate_slang_for_date(monkeypatch):
     assert row.status == "generated"
     assert row.slang == "hit the sack"
     assert row.caption
+    assert row.title
     assert row.theme == "日常生活"
     assert row.hook
 

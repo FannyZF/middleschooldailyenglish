@@ -53,6 +53,10 @@ def _migrate() -> None:
             conn.execute(
                 text("ALTER TABLE slang_content ADD COLUMN hook TEXT DEFAULT ''")
             )
+        if s_cols and "title" not in s_cols:
+            conn.execute(
+                text("ALTER TABLE slang_content ADD COLUMN title VARCHAR(200) DEFAULT ''")
+            )
 
 
 def init_db() -> None:

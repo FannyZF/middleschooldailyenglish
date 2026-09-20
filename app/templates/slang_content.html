@@ -24,7 +24,7 @@
   <div class="copy-box">
     <div class="copy-label">标题</div>
     <div class="copy-row">
-      <input type="text" id="post-title" value="一天一个英文Slang | {{ c.slang }}" readonly>
+      <input type="text" id="post-title" value="{{ c.title or ('一天一个英文Slang | ' ~ c.slang) }}" readonly>
       <button type="button" onclick="copyText('post-title')">复制</button>
     </div>
   </div>
