@@ -108,8 +108,13 @@ SLANG_SYSTEM_PROMPT = """你是一名精通地道英语口语的英语老师，�
    职场 / 学生 / 日常生活 / 社交 / 网络热词 / 情感
    并且让例句与场景对话尽量贴合所选主题。
 10. 生成一条 hook 钩子句：用一句口语化中文，讲出该俚语最扎心/最真实的一个使用场景（第二人称，能引起共鸣、让人想点开），不超过 40 字，不要出现俚语本身。
-11. 生成一条社交平台发布文案 caption，严格按以下模板填写（把【】换成具体内容，保留其余文字和引号）：
-你是否有过【具体经历/场景】的经历，这样的经历向你的外国朋友要怎么描述呢？不要再说【传统表达（被这个俚语替代的常规说法）】了，今天我们的slang "【俚语】"帮你的外国朋友秒懂！
+11. 生成小红书发布文案 caption：中文，200 字以内，要有网感、口语化，像真人分享，严禁套用固定句式或模板。结构要求：
+    - 开头用一句钩子迅速抓住注意力（共鸣式提问、反差、戳痛点都行）。
+    - 用 1-2 句简要说明这个 slang 的来源 / 为什么这么说（字面意思、由来或典故），让读者理解它为何表达这个意思。
+    - 用 1-2 句把适用场景自然融入文案（在什么场合、对谁说、什么语气），不要干巴巴罗列。
+    - 结尾加互动引导：鼓励读者 @ 好友 / @ 搭子、点赞收藏转发，或到评论区聊聊（挑 1-2 种即可）。
+    - 可少量使用 emoji 增强语气，但不要堆砌。
+    - 整体读起来要自然、有互动感，不要出现“今天我们的 slang 是……”这类固定句式。
 
 重要：输出的 slang 必须从本次提供的候选内容中挑选/提炼，绝不要输出候选列表里不存在的表达，也不要使用本提示文字里出现过的任何例子词。
 
@@ -127,7 +132,7 @@ JSON 结构如下：
   ],
   "source": "来源，如 Reddit r/AskReddit 或 Urban Dictionary",
   "source_url": "来源链接",
-  "caption": "按模板生成的发布文案",
+  "caption": "小红书发布文案（≤200字：钩子+来源+场景+互动）",
   "hook": "一句话钩子文案",
   "theme": "职场/学生/日常生活/社交/网络热词/情感"
 }
@@ -160,7 +165,32 @@ def generate_slang(
         f"{candidates}\n\n"
         f"请从中挑选/提炼 1 个最值得学习、适合公开分享的地道俚语并生成内容，严格返回 JSON。{hint_text}"
     )
-    return _call_llm(SLANG_SYSTEM_PROMPT, user)
+    data = _call_llm(SLANG_SYSTEM_PROMPT, user)
+
+    caption = (data.get("caption") or "").strip()
+    if len(caption) > 200:
+        data["caption"] = _shorten_caption(caption)
+    return data
+
+
+def _shorten_caption(caption: str) -> str:
+    """文案超长时压缩到 200 字内（保留钩子/来源/场景/互动）。"""
+    user = (
+        "把下面这段小红书文案压缩到 200 字以内，必须保留：开头钩子、俚语来源说明、"
+        "适用场景、结尾互动引导；口语化、有网感。只返回压缩后的文案纯文本，不要引号、不要解释：\n\n"
+        f"{caption}"
+    )
+    try:
+        client = _client()
+        resp = client.chat.completions.create(
+            model=settings.deepseek_model,
+            messages=[{"role": "user", "content": user}],
+            timeout=60,
+        )
+        out = (resp.choices[0].message.content or "").strip()
+        return out or caption
+    except Exception:
+        return caption
 
 
 QUIZ_SYSTEM_PROMPT = """你是一名面向成年人的地道英语老师，负责为一周发布过的俚语出「情境对话 → 选回应」选择题，帮读者检验是不是真会“用”。
